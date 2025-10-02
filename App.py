@@ -2,18 +2,26 @@ from flask import Flask, render_template, request, jsonify
 import serial
 import serial.tools.list_ports
 import binascii
+import time
 from datetime import datetime
 
 app = Flask(__name__)
-ser = None  # serial port instance
+ser = None
 
 def timestamp():
-    return datetime.now().strftime("%H:%M:%S")
+    return datetime.now().strftime("%H:%M:%S") 
+
 
 @app.route("/")
 def index():
+    return render_template("index.html")
+
+
+@app.route("/ports", methods=["GET"])
+def list_ports():
     ports = [port.device for port in serial.tools.list_ports.comports()]
-    return render_template("index.html", ports=ports)
+    return jsonify({"ports": ports})
+
 
 @app.route("/connect", methods=["POST"])
 def connect():
@@ -21,14 +29,20 @@ def connect():
     data = request.json
     port = data.get("port")
     baudrate = int(data.get("baudrate", 9600))
+
     try:
+        
+        if ser and ser.is_open:
+            ser.close()
+
         ser = serial.Serial(port, baudrate, timeout=1)
         return jsonify({"status": f"Connected to {port} at {baudrate} bps"})
-    except Exception as e:
+    except Exception as e: 
         return jsonify({"error": str(e)}), 400
 
-@app.route("/send", methods=["POST"])
-def send():
+
+@app.route("/sendCommand", methods=["POST"])
+def sendCommand(): 
     global ser
     if not ser or not ser.is_open:
         return jsonify({"error": "Not connected"}), 400
@@ -37,25 +51,42 @@ def send():
     hex_command = data.get("command", "").replace(" ", "")
 
     log_messages = []
-
-    # 1. เวลาส่งคำสั่ง
     log_messages.append(f"{timestamp()} - Sent: {hex_command}")
 
     try:
         command_bytes = bytes.fromhex(hex_command)
         ser.write(command_bytes)
 
-        # 2. เวลารับ response (ครั้งแรก)
-        response = ser.read(1024)
-        if response:
-            hex_response = binascii.hexlify(response).decode().upper()
-            log_messages.append(f"{timestamp()} - Response: {hex_response}")
+        ack = ser.read(1)
+        if ack:
+            hex_ack = binascii.hexlify(ack).decode().upper()
+            log_messages.append(f"{timestamp()} - Response(ACK): {hex_ack}")
         else:
-            log_messages.append(f"{timestamp()} - Response: <no data>")
+            log_messages.append(f"{timestamp()} - Response(ACK): !no data")
 
-        # 3. ส่งกลับทั้งหมด
+        ser.timeout = 0.1
+        response_bytes = bytearray()
+        while True:
+            chunk = ser.read(1024)
+            if chunk:
+                response_bytes.extend(chunk)
+                if b'\x03' in chunk: 
+                    break
+            if len(response_bytes) == 0 and ser.timeout > 61:
+                break
+
+        if response_bytes:
+            hex_response = binascii.hexlify(response_bytes).decode().upper()
+            log_messages.append(f"{timestamp()} - Response : {hex_response}")
+        else:
+            log_messages.append(f"{timestamp()} - Response : !no data")
+
+        # reset timeout
+        ser.timeout = 1
+
         return jsonify({"logs": log_messages})
-    except Exception as e:
+
+    except Exception as e: 
         log_messages.append(f"{timestamp()} - Error: {str(e)}")
         return jsonify({"logs": log_messages}), 400
 
