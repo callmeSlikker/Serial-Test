@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Serial Test Logger</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    select, input, button { margin: 5px 0; padding: 5px; }
+    input { width: 60%; }
+    pre { background: #f0f0f0; padding: 10px; height: 300px; overflow-y: scroll; }
+  </style>
+</head>
+<body>
+  <h2>EDC Serial Logger</h2>
+
+  <label>เลือก COM Port:</label>
+  <select id="portSelect">
+    {% for port in ports %}
+      <option value="{{ port }}">{{ port }}</option>
+    {% endfor %}
+  </select>
+
+  <label>เลือก Baudrate:</label>
+  <select id="baudrateSelect">
+    <option value="9600">9600</option>
+    <option value="115200">115200</option>
+  </select>
+
+  <button onclick="connect()">Connect</button>
+  <p id="status"></p>
+
+  <h3>ส่งคำสั่ง HEX</h3>
+  <input type="text" id="commandInput" placeholder="เช่น 02 00 35 36 ... 15">
+  <button onclick="sendCommand()">Send</button>
+
+  <h3>Log:</h3>
+  <pre id="logBox"></pre>
+
+  <script>
+    const logBox = document.getElementById("logBox");
+
+    async function connect() {
+      const port = document.getElementById("portSelect").value;
+      const baudrate = document.getElementById("baudrateSelect").value;
+      const res = await fetch("/connect", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({port, baudrate})
+      });
+      const data = await res.json();
+      document.getElementById("status").innerText = data.status || data.error;
+    }
+
+    async function sendCommand() {
+      const port = document.getElementById("portSelect").value;
+      const baudrate = document.getElementById("baudrateSelect").value;
+      const command = document.getElementById("commandInput").value;
+
+      const res = await fetch("/send", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({port, baudrate, command})
+      });
+      const data = await res.json();
+      if (data.logs) {
+        data.logs.forEach(msg => {
+          logBox.textContent += msg + "\n";  // ต่อข้อความไม่ลบ
+        });
+        logBox.scrollTop = logBox.scrollHeight; // scroll ลงล่าง
+      }
+    }
+  </script>
+</body>
+</html>
