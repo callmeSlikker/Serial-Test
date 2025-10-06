@@ -80,7 +80,7 @@ def sendCommand():
             log_messages.append(f"{timestamp()} - Response : {hex_response}") # add the response message to the log messages list with a timestamp
         else:
             log_messages.append(f"{timestamp()} - Response : !no data") # complete the response message with "no data" if there's no data
-
+#03 เป็น ETX จริงรึป่าว
         # reset timeout
         ser.timeout = 1
 

@@ -28,12 +28,14 @@ async function connect() {
 }
 
 async function sendCommand() {
+  const port = document.getElementById("portSelect").value;
+  const baudrate = document.getElementById("baudrateSelect").value;
   const command = document.getElementById("commandInput").value;
 
   const res = await fetch("/sendCommand", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ command })
+    body: JSON.stringify({ port, baudrate, command })
   });
 
   const data = await res.json();
@@ -44,6 +46,7 @@ async function sendCommand() {
     appendLog(data.error);
   }
 }
+
 
 function appendLog(message) {
   const responseBox = document.getElementById("responseBox");

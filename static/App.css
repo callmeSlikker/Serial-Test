@@ -1,6 +1,6 @@
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f4f6f8;
+  background-color: #ffffff;
   color: #333;
   display: flex;
   justify-content: center;
@@ -9,68 +9,70 @@ body {
   padding: 40px 20px;
 }
 
-.container {
+.serail-test-header {
   display: flex;
   justify-content: center;
-  padding: 30px;
   width: 100%;
   font-size: 20px;
   font-weight: 700;
   color: #333 !important;
 }
 
-.serail-test-header{
-  display: flex;
-  justify-content: center;
-  padding: 30px;
+.connect-header {
+  justify-content: left;
   width: 100%;
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 600;
   color: #333 !important;
 }
 
-h1, h3 {
-  text-align: center;
-  color: #444;
-}
-
-label {
-  display: block;
-  margin-top: 15px;
+.connect-body {
+  justify-content: left;
+  width: 100%;
+  font-size: 16px;
   font-weight: 500;
+  color: #333 !important;
 }
 
-select, input[type="text"] {
-  width: 100%;
-  padding: 10px 12px;
-  margin-top: 5px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+.select label {
+  width: 150px;
+  border: 1px solid #ffffff;
+  border-radius: 10px;
   font-size: 16px;
   transition: border-color 0.3s;
 }
 
-select:focus, input[type="text"]:focus {
-  border-color: #007bff;
+.input-text {
+  width: 800px;
+  height: 80px;
+  font-size: 14px;
+  padding: 8px;
+  box-sizing: border-box;
+  resize: none;
+  overflow-wrap: break-word;
+}
+
+select:focus,
+input[type="text"]:focus {
+  border-color: #000000;
   outline: none;
 }
 
 button {
-  margin-top: 20px;
-  padding: 12px 20px;
-  width: 100%;
-  font-size: 16px;
-  font-weight: 600;
-  color: #fff;
-  background-color: #007bff;
+  width: 80px;
+  height: 20px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #6f6f6f;
+  background-color: #c9c9c9;
   border: none;
-  border-radius: 8px;
+  border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.3s;
 }
 
 button:hover {
-  background-color: #0056b3;
+  background-color: #99ffb3;
 }
 
 pre {
