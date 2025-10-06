@@ -65,15 +65,23 @@ def sendCommand():
             log_messages.append(f"{timestamp()} - Response(ACK): !no data")
 
         ser.timeout = 0.1
+
         response_bytes = bytearray()
+        last_data_time = time.time()
+        quiet_time = 0.5 
+        max_wait = 60
+
         while True:
-            chunk = ser.read(1024)
+            chunk = ser.read(ser.in_waiting or 1)  # read all data in the buffer
             if chunk:
                 response_bytes.extend(chunk)
-                if b'\x03' in chunk: 
+                last_data_time = time.time()
+            else:
+                now = time.time()
+                if response_bytes.endswith(b'\x03') and (now - last_data_time > quiet_time):
                     break
-            if len(response_bytes) == 0 and ser.timeout > 61:
-                break
+                if now - last_data_time > max_wait:
+                    break
 
         if response_bytes:
             hex_response = binascii.hexlify(response_bytes).decode().upper()
@@ -81,7 +89,6 @@ def sendCommand():
         else:
             log_messages.append(f"{timestamp()} - Response : !no data")
 
-        # reset timeout
         ser.timeout = 1
 
         return jsonify({"logs": log_messages})
@@ -89,6 +96,8 @@ def sendCommand():
     except Exception as e: 
         log_messages.append(f"{timestamp()} - Error: {str(e)}")
         return jsonify({"logs": log_messages}), 400
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)
