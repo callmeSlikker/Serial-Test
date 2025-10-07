@@ -104,6 +104,7 @@ def sendCommand():
     #     return jsonify({"logs": log_messages})
 
     except Exception as e: 
+        print(e)
         log_messages.insert(0, f"{timestamp()} - This message is not Hypercom")
         log_messages.append(f"{timestamp()} - Error: {str(e)}")
         return jsonify({"logs": log_messages}), 400

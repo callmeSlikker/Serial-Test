@@ -3,96 +3,100 @@ import serial
 import serial.tools.list_ports
 import binascii
 import time
+import json
 from datetime import datetime
 
 app = Flask(__name__)
 ser = None  # global serial object
+resString = '{ "errormsg":" ", "Request":" ", "Response":" ", "log":" "}'
+resJson = json.loads(resString)
 
 def timestamp():
     return datetime.now().strftime("%H:%M:%S") 
 
-def serialError(ser, Message):
+def serialError(ser, Message ,errormsg):
     ser.reset_input_buffer()
     ser.reset_output_buffer()
     ser.close()
-    return jsonify({"logs": [Message]}), 400
-
-from flask import Flask, request, jsonify
-import serial
-import time
-from datetime import datetime
+    resJson["errormsg"] = errormsg
+    resJson["log"] = "".join(Message)
+    print("serialError"+resJson)
+    return jsonify(resJson), 400
 
 app = Flask(__name__)
 
 def current_time():
     return datetime.now().strftime("%H:%M:%S")
 
-def send_command(port, baudrate, command, timeout=30):
-    log = {}
+# def send_command(port, baudrate, command, timeout=30):
+#     log = {}
 
-    try:
-        ser = serial.Serial(port, baudrate, timeout=timeout)
-        if not ser.is_open:
-            log[current_time()] = {"error": "Connect Error: Cannot open port"}
-            return log
+#     try:
+#         ser = serial.Serial(port, baudrate, timeout=timeout)
+#         if not ser.is_open:
+#             log[current_time()] = {"error": "Connect Error: Cannot open port"}
+#             return log
         
-        # === ส่ง command ===
-        ser.write(command)
-        log[current_time()] = {"command": command.hex().upper()}
+#         resJson["Reuqest"] = command
+#         # === ส่ง command ===
+#         ser.write(command)
+#         log[current_time()] = {"command": command.hex().upper()}
 
-        # === รอ ACK (06h) ภายใน 1 วินาที ===
-        ack = None
-        start_time = time.time()
-        while time.time() - start_time < 1:
-            if ser.in_waiting:
-                ack_byte = ser.read(1)
-                ack = ack_byte.hex().upper()
-                log[current_time()] = {"ack_recv": ack}
-                if ack_byte == b'\x06':  # ถูกต้อง
-                    break
-                else:  # ไม่ใช่ 06h
-                    ser.close()
-                    return log
+#         # === รอ ACK (06h) ภายใน 1 วินาที ===
+#         ack = None
+#         # start_time = time.time()
+#         # while time.time() - start_time < 1:
+#         ack_byte = ser.read(1)
+#         ack = ack_byte.hex().upper()
+#         log[current_time()] = {"ack_recv": ack}
+#         if ack_byte == b'\x06':
+#             print(ack)  # ถูกต้อง
+#         else:  # ไม่ใช่ 06h
+#             ser.close()
+#             return log
 
-        if ack is None:
-            log[current_time()] = {"ack_recv": None}
-            ser.close()
-            return log
+#         if ack is None:
+#             log[current_time()] = {"ack_recv": None}
+#             ser.close()
+#             return log
 
-        # === รอ response ===
-        ser.timeout = 1
-        response_bytes = bytearray()
-        last_data_time = time.time()
-        max_wait = 60
-        while True:
-            chunk = ser.read(1)
-            if chunk:
-                response_bytes.extend(chunk)
-                last_data_time = time.time()
+#         # === รอ response ===
+#         ser.timeout = 1
+#         response_bytes = bytearray()
+#         last_data_time = time.time()
+#         max_wait = 60
+#         while True:
+#             chunk = ser.read(1)
+#             if chunk:
+#                 response_bytes.extend(chunk)
+#                 last_data_time = time.time()
 
-                # ถ้าเจอ ...1C03 → หยุด
-                if response_bytes.endswith(b'\x1C\x03'):
-                    break
-            else:
-                if time.time() - last_data_time > max_wait:
-                    break
+#                 # ถ้าเจอ ...1C03 → หยุด
+#                 if response_bytes.endswith(b'\x1C\x03'):
+#                     break
+#             else:
+#                 if time.time() - last_data_time > max_wait:
+#                     break
 
-        if response_bytes:
-            full_response = response_bytes.hex().upper()
-            log[current_time()] = {"response_full": full_response}
-        else:
-            log[current_time()] = {"response_full": None}
+#         if response_bytes:
+#             full_response = response_bytes.hex().upper()
+#             log[current_time()] = {"response_full": full_response}
+#         else:
+#             log[current_time()] = {"response_full": None}
+        
+#         # === ส่ง ACK (06h) กลับ ===
+#         ser.write(b'\x06')
+#         resJson["Response"] = full_response
+#         resJson["log"] = log
+#         return jsonify(resJson)
+#         # log[current_time()] = {"ack_sent": "06"}
 
-        # === ส่ง ACK (06h) กลับ ===
-        ser.write(b'\x06')
-        log[current_time()] = {"ack_sent": "06"}
+#         # ser.close()
+#         # return log
 
-        ser.close()
-        return log
-
-    except Exception as e:
-        log[current_time()] = {"error": str(e)}
-        return log
+#     except Exception as e:
+#         log[current_time()] = {"error": str(e)}
+#         return log
 
 @app.route("/sendCommand", methods=["POST"])
 def sendCommand(): 
@@ -102,13 +106,21 @@ def sendCommand():
     baudrate = int(data.get("baudrate", 9600))
     hex_command = data.get("command", "").replace(" ", "")
     log_messages = []
+    #init Response Message
+    resJson["errormsg"] = ""
+    resJson["Request"] = ""
+    resJson["Response"] = ""
+    resJson["log"] = []
+
 
     try:
         # เปิด serial port
         ser = serial.Serial(port, baudrate, timeout=1)
         log_messages.append(f"{timestamp()} - Connected to {port} at {baudrate} bps")
 
+        resJson["errormsg"] = "succuss"
         # --- ส่ง command ---
+        resJson["Request"] = hex_command
         command_bytes = bytes.fromhex(hex_command)
         ser.write(command_bytes)
         log_messages.append(f"{timestamp()} - Sent: {hex_command}")
@@ -121,12 +133,16 @@ def sendCommand():
                 log_messages.append(f"{timestamp()} - Response(ACK): {hex_ack}")
             else:
                 log_messages.append(f"{timestamp()} - Response(ACK): {hex_ack} invalid")
-                ser.close()
-                return jsonify({"logs": log_messages}), 400
+                # print(log_messages)
+                return serialError (ser,log_messages,"invalid Message")
+                # ser.close()
+                # # return jsonify({"logs": log_messages}), 400
         else:
             log_messages.append(f"{timestamp()} - Response(ACK): no ACK (timeout)")
-            ser.close()
-            return jsonify({"logs": log_messages}), 400
+            # print(log_messages)
+            return serialError (ser,log_messages,"no ACK (timeout)")
+            # ser.close()
+            # # return jsonify({"logs": log_messages}), 400
 
         # --- อ่าน response เต็มจนเจอ 1C03 ---
         response_bytes = bytearray()
@@ -156,13 +172,23 @@ def sendCommand():
         ser.write(b'\x06')
         log_messages.append(f"{timestamp()} - ACK sent")
 
+        ser.reset_input_buffer()
+        ser.reset_output_buffer()
         ser.close()
-        return jsonify({"logs": log_messages})
+        resJson["Response"] = hex_response
+        resJson["log"] = log_messages
+        print(resJson)
+        return jsonify(resJson)
+        # return jsonify({"logs": log_messages})
 
     except Exception as e:
         log_messages.append(f"{timestamp()} - Error: {str(e)}")
-        return jsonify({"logs": log_messages}), 400
-
+        print("error"+str(e))
+        resJson["log"] = "".join(log_messages)
+        resJson["errormsg"] = str(e)
+        # return jsonify({"logs": log_messages}), 400
+        return jsonify(resJson)
+    
 
 @app.route("/")
 def index():
