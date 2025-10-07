@@ -54,4 +54,24 @@ function appendLog(message) {
   responseBox.scrollTop = responseBox.scrollHeight;
 }
 
+let currentController = null;
+
+async function cancelAll() {
+  // ยกเลิก fetch ฝั่ง frontend
+  if (currentController) {
+    currentController.abort();
+    currentController = null;
+    appendLog("Fetch canceled (frontend).");
+  }
+
+  // ส่งคำสั่งยกเลิกไป backend
+  try {
+    await fetch("/cancel", { method: "POST" });
+    appendLog("Backend operation canceled.");
+  } catch (err) {
+    appendLog("Cancel request failed: " + err.message);
+  }
+}
+
+
 window.onload = loadPorts;

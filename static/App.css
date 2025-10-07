@@ -2,11 +2,7 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #ffffff;
   color: #333;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  min-height: 100vh;
-  padding: 40px 20px;
+  padding: 10px;
 }
 
 .serail-test-header {
@@ -37,7 +33,7 @@ body {
 .select label {
   width: 150px;
   border: 1px solid #ffffff;
-  border-radius: 10px;
+  border-radius: 20px !important;
   font-size: 16px;
   transition: border-color 0.3s;
 }
@@ -75,13 +71,29 @@ button:hover {
   background-color: #99ffb3;
 }
 
-pre {
-  background-color: #f0f0f0;
-  padding: 15px;
-  border-radius: 10px;
-  max-height: 250px;
-  overflow-y: auto;
-  margin-top: 20px;
+.pre {
+  width: 100%;            /* ยืดเต็มพื้นที่ภายใน container */
+  max-width: 800px;       /* จำกัดความกว้างสูงสุดตามที่คุณเคยตั้งไว้ */
+  height: auto;           /* ขยายตามเนื้อหา */
+  min-height: 80px;       /* ถ้าต้องการความสูงเริ่มต้น */
+  padding: 8px;
+  box-sizing: border-box;
+
+  /* อย่าให้มันดูเป็นกล่อง */
+  border: none;
+  background: transparent;
+  box-shadow: none;
+
+  /* ห่อบรรทัดเมื่อยาวเกินความกว้าง และรักษาช่องว่าง/ขึ้นบรรทัด */
+  white-space: pre-wrap;
+  overflow: visible;
+  font-family: monospace; /* จะเหมือน pre ปกติ */
   font-size: 14px;
   line-height: 1.4;
+}
+
+/* ถ้าต้องการให้แถวยาว ๆ สามารถเลื่อนได้แทนการล้นออกนอกหน้า */
+.pre--scrollable {
+  max-height: 300px;
+  overflow: auto;
 }

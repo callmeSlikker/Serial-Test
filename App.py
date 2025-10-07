@@ -17,69 +17,53 @@ def serialError(ser, Message):
     ser.close()
     return jsonify({"logs": [Message]}), 400
 
+from flask import Flask, request, jsonify
+import serial
+import time
+from datetime import datetime
 
-@app.route("/")
-def index():
-    return render_template("index.html")
+app = Flask(__name__)
 
+def current_time():
+    return datetime.now().strftime("%H:%M:%S")
 
-@app.route("/ports", methods=["GET"])
-def list_ports():
-    ports = [port.device for port in serial.tools.list_ports.comports()]
-    return jsonify({"ports": ports})
-
-
-@app.route("/sendCommand", methods=["POST"])
-def sendCommand(): 
-    global ser
-    data = request.json
-    port = data.get("port")
-    baudrate = int(data.get("baudrate", 9600))
-    hex_command = data.get("command", "").replace(" ", "")
-
-    log_messages = []
+def send_command(port, baudrate, command, timeout=30):
+    log = {}
 
     try:
-        if not ser or not ser.is_open:
-            if ser:
-                ser.close()
-            ser = serial.Serial(port, baudrate, timeout=1)
-            log_messages.append(f"{timestamp()} - Connected to {port} at {baudrate} bps")
-        else:
-            log_messages.append(f"{timestamp()} - Already connected to {ser.port} at {ser.baudrate} bps")
-    except Exception as e:
-        log_messages.append(f"{timestamp()} - Connect Error: {str(e)}")
-        return jsonify({"logs": log_messages}), 400
+        ser = serial.Serial(port, baudrate, timeout=timeout)
+        if not ser.is_open:
+            log[current_time()] = {"error": "Connect Error: Cannot open port"}
+            return log
+        
+        # === ส่ง command ===
+        ser.write(command)
+        log[current_time()] = {"command": command.hex().upper()}
 
-    # --- ส่ง command ---
-    log_messages.append(f"{timestamp()} - Sent: {hex_command}")
+        # === รอ ACK (06h) ภายใน 1 วินาที ===
+        ack = None
+        start_time = time.time()
+        while time.time() - start_time < 1:
+            if ser.in_waiting:
+                ack_byte = ser.read(1)
+                ack = ack_byte.hex().upper()
+                log[current_time()] = {"ack_recv": ack}
+                if ack_byte == b'\x06':  # ถูกต้อง
+                    break
+                else:  # ไม่ใช่ 06h
+                    ser.close()
+                    return log
 
-    try:
-        command_bytes = bytes.fromhex(hex_command)
-        ser.write(command_bytes)
+        if ack is None:
+            log[current_time()] = {"ack_recv": None}
+            ser.close()
+            return log
 
-        # อ่าน ACK ตัวแรก
-        ack = ser.read(1)
-        print(ack)
-        if ack :  #check ack not null
-            if ack == b'\x06':  #if get ack 06 continue to wait for response
-                hex_ack = binascii.hexlify(ack).decode().upper()
-                log_messages.append(f"{timestamp()} - Response(ACK): {hex_ack}")
-            else: #invalid ack
-                hex_ack = binascii.hexlify(ack).decode().upper()
-                log_messages.append(f"{timestamp()} - Response(ACK): {hex_ack} {"hex_invalid meaage"}")
-                return serialError (ser, log_messages)
-#return jsonify({"logs": log_messages})
-        else: #no ack
-            log_messages.append(f"{timestamp()} - Response(ACK): no ACK time out")
-            return serialError (ser, log_messages)
-
-        # --- อ่าน response แบบ raw HEX ---
+        # === รอ response ===
         ser.timeout = 1
         response_bytes = bytearray()
         last_data_time = time.time()
         max_wait = 60
-
         while True:
             chunk = ser.read(1)
             if chunk:
@@ -94,25 +78,112 @@ def sendCommand():
                     break
 
         if response_bytes:
-            hex_response = binascii.hexlify(response_bytes).decode().upper()
-
-            # --- ตรวจสอบว่าเป็น Hypercom หรือไม่ ---
-            if hex_response.startswith("02") and hex_response.endswith("C103"):
-                log_messages.insert(0, f"{timestamp()} - Hypercom message detected")
-            else:
-                log_messages.insert(0, f"{timestamp()} - This message is not Hypercom")
-
-            log_messages.append(f"{timestamp()} - Response : {hex_response}")
+            full_response = response_bytes.hex().upper()
+            log[current_time()] = {"response_full": full_response}
         else:
-            log_messages.append(f"{timestamp()} - Response : !no data")
+            log[current_time()] = {"response_full": None}
 
+        # === ส่ง ACK (06h) กลับ ===
+        ser.write(b'\x06')
+        log[current_time()] = {"ack_sent": "06"}
+
+        ser.close()
+        return log
+
+    except Exception as e:
+        log[current_time()] = {"error": str(e)}
+        return log
+
+@app.route("/sendCommand", methods=["POST"])
+def sendCommand(): 
+    global ser
+    data = request.json
+    port = data.get("port")
+    baudrate = int(data.get("baudrate", 9600))
+    hex_command = data.get("command", "").replace(" ", "")
+    log_messages = []
+
+    try:
+        # เปิด serial port
+        ser = serial.Serial(port, baudrate, timeout=1)
+        log_messages.append(f"{timestamp()} - Connected to {port} at {baudrate} bps")
+
+        # --- ส่ง command ---
+        command_bytes = bytes.fromhex(hex_command)
+        ser.write(command_bytes)
+        log_messages.append(f"{timestamp()} - Sent: {hex_command}")
+
+        # --- อ่าน ACK ---
+        ack = ser.read(1)
+        if ack:
+            hex_ack = binascii.hexlify(ack).decode().upper()
+            if ack == b'\x06':
+                log_messages.append(f"{timestamp()} - Response(ACK): {hex_ack}")
+            else:
+                log_messages.append(f"{timestamp()} - Response(ACK): {hex_ack} invalid")
+                ser.close()
+                return jsonify({"logs": log_messages}), 400
+        else:
+            log_messages.append(f"{timestamp()} - Response(ACK): no ACK (timeout)")
+            ser.close()
+            return jsonify({"logs": log_messages}), 400
+
+        # --- อ่าน response เต็มจนเจอ 1C03 ---
+        response_bytes = bytearray()
+        last_data_time = time.time()
+        max_wait = 60  # วินาที
+
+        while True:
+            chunk = ser.read(1)
+            if chunk:
+                response_bytes.extend(chunk)
+                last_data_time = time.time()
+                # หยุดเมื่อเจอ 1C03
+                if response_bytes.endswith(b'\x1C\x03'):
+                    break
+            else:
+                if time.time() - last_data_time > max_wait:
+                    log_messages.append(f"{timestamp()} - Response timeout")
+                    break
+
+        if response_bytes:
+            hex_response = binascii.hexlify(response_bytes).decode().upper()
+            log_messages.append(f"{timestamp()} - Response: {hex_response}")
+        else:
+            log_messages.append(f"{timestamp()} - Response: !no data")
+
+        # --- ส่ง ACK กลับไป ---
+        ser.write(b'\x06')
+        log_messages.append(f"{timestamp()} - ACK sent")
+
+        ser.close()
         return jsonify({"logs": log_messages})
 
-    except Exception as e: 
-        log_messages.insert(0, f"{timestamp()} - This message is not Hypercom")
+    except Exception as e:
         log_messages.append(f"{timestamp()} - Error: {str(e)}")
         return jsonify({"logs": log_messages}), 400
 
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/ports", methods=["GET"])
+def list_ports():
+    ports = [port.device for port in serial.tools.list_ports.comports()]
+    return jsonify({"ports": ports})
+
+
+@app.route("/cancel", methods=["POST"])
+def cancel_operation():
+    global cancel_flag, ser
+    cancel_flag = True
+    try:
+        if ser and ser.is_open:
+            ser.close()
+        return jsonify({"status": "Canceled"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 

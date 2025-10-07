@@ -15,9 +15,6 @@
     </div>
 
     <div>
-      <div>
-        <p class="connect-header">Connect to Serial Port</p>
-      </div>
       <div class="connect-body" style="display: flex; justify-content: left; gap: 10px; width: 70%;">
         <div>
           <label class="connect-body">COM Port:</label>
@@ -37,9 +34,6 @@
             <option value="Hypercom">Hypercom</option>
           </select>
         </div>
-        <div>
-          <button onclick="connect()">Connect</button>
-        </div>
       </div>
     </div>
 
@@ -47,11 +41,12 @@
       <p class="connect-body">HEX Command:</p>
       <textarea type="text" id="commandInput" class="input-text" placeholder="e.g. 02030A"></textarea>
       <button onclick="sendCommand()">Send</button>
+      <button onclick="cancelAll()">Cancel</button>
     </div>
 
     <div>
       <p class="connect-body">Logs:</p>
-      <pre id="responseBox"></pre>
+      <pre class="pre" id="responseBox"></pre>
     </div>
   </div>
 </body>
