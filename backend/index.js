@@ -13,6 +13,7 @@ let ser = null; // global serial object
 app.get("/ports", async (req, res) => {
   try {
     const portList = await SerialPort.list();
+    console.log("portListasdf", portList)
     const ports = portList.map(p => p.path);
     res.json({ ports });
   } catch (err) {

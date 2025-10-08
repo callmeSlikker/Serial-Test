@@ -4,7 +4,7 @@
   "scripts": {
     "start": "concurrently \"npm run start-frontend\" \"npm run start-backend\" \"npm run start-python\"",
     "start-frontend": "cd frontend && npm run dev",
-    "start-backend": "cd backend && node index.js",
+    "start-backend": "cd backend && nodemon index.js",
     "start-python": "cd python-api && python App.py"
   },
   "devDependencies": {

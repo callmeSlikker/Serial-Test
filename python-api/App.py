@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS
 import serial
 import serial.tools.list_ports
 import binascii
@@ -7,6 +8,7 @@ import json
 from datetime import datetime
 
 app = Flask(__name__)
+CORS(app)
 ser = None  # global serial object
 resString = '{ "errormsg":" ", "Request":" ", "Response":" ", "log":" "}'
 resJson = json.loads(resString)
@@ -22,8 +24,6 @@ def serialError(ser, Message ,errormsg):
     resJson["log"] = "".join(Message)
     print("serialError"+resJson)
     return jsonify(resJson), 400
-
-app = Flask(__name__)
 
 def current_time():
     return datetime.now().strftime("%H:%M:%S")
@@ -196,6 +196,7 @@ def index():
 
 @app.route("/ports", methods=["GET"])
 def list_ports():
+    print("fdafasdfsd")
     ports = [port.device for port in serial.tools.list_ports.comports()]
     return jsonify({"ports": ports})
 

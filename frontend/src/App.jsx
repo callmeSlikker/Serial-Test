@@ -21,6 +21,7 @@ function App() {
     async function fetchPorts() {
       try {
         const res = await fetch("http://localhost:4000/ports");
+        console.log("resadsfasdf", res)
         const data = await res.json();
         if (data.ports && data.ports.length > 0) {
           setPorts(data.ports);
@@ -48,7 +49,7 @@ function App() {
   };
 
   const sendCommand = async (hexCommand) => {
-    const cmdToSend = hexCommand || command;
+    const cmdToSend = hexCommand;
     if (!cmdToSend) {
       appendLog("Please enter a command before sending.");
       return;
@@ -96,6 +97,8 @@ function App() {
     setNewCommandHex("");
     setShowAddModal(false);
   };
+
+  console.log("commandsasdf", commands)
 
   return (
     <div style={{ padding: "20px", width: "100vh", height: "100vh", boxSizing: "border-box" }}>
@@ -212,7 +215,7 @@ function App() {
         <div style={{ flex: "0 0 60%", display: "flex", flexDirection: "column", gap: "20px" }}>
           <div>
             <button
-              onClick={sendCommand}
+              onClick={() => sendCommand(command)}
               style={{
                 padding: "6px 12px",
                 fontSize: "14px",
