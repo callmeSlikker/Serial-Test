@@ -10,27 +10,27 @@ app.use(express.json());
 let ser = null; // global serial object
 
 // --- Serial Ports ---
-app.get("/ports", async (req, res) => {
-  try {
-    const portList = await SerialPort.list();
-    console.log("portListasdf", portList)
-    const ports = portList.map(p => p.path);
-    res.json({ ports });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// app.get("/ports", async (req, res) => {
+//   try {
+//     const portList = await SerialPort.list();
+//     console.log("portListasdf", portList)
+//     const ports = portList.map(p => p.path);
+//     res.json({ ports });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
 
 // --- Connect Port ---
-app.post("/connect", async (req, res) => {
-  const { port, baudrate } = req.body;
-  try {
-    ser = new SerialPort({ path: port, baudRate: baudrate });
-    res.json({ status: `Connected to ${port} at ${baudrate}` });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// app.post("/connect", async (req, res) => {
+//   const { port, baudrate } = req.body;
+//   try {
+//     ser = new SerialPort({ path: port, baudRate: baudrate });
+//     res.json({ status: `Connected to ${port} at ${baudrate}` });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
 
 // --- Send Command (Python style) ---
 app.post("/sendCommand", async (req, res) => {

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { HypercomMessageHelper } from "./message/HypercomMessageHelper.js";
 
 function App() {
   const [ports, setPorts] = useState([]);
@@ -8,19 +9,25 @@ function App() {
   const [command, setCommand] = useState("");
   const [logs, setLogs] = useState([]);
   const [commands, setCommands] = useState([]);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [newCommandName, setNewCommandName] = useState("");
   const [newCommandHex, setNewCommandHex] = useState("");
   const currentController = useRef(null);
+  const [editIndex, setEditIndex] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editHex, setEditHex] = useState("");
+  const [editorWarning, setEditorWarning] = useState("");
+  const [transactionCode, setTransactionCode] = useState("");
+  const [fields, setFields] = useState([{ id: Date.now(), bit: "", value: "" }]);
+
+
 
   const appendLog = (message) => {
     setLogs((prev) => [...prev, message]);
   };
-
   useEffect(() => {
     async function fetchPorts() {
       try {
-        const res = await fetch("http://localhost:4000/ports");
+        const res = await fetch("http://127.0.0.1:5000/ports");
         console.log("resadsfasdf", res)
         const data = await res.json();
         if (data.ports && data.ports.length > 0) {
@@ -34,18 +41,80 @@ function App() {
     fetchPorts();
   }, []);
 
-  const connect = async () => {
-    try {
-      const res = await fetch("http://localhost:4000/connect", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ port: selectedPort, baudrate: selectedBaudrate }),
-      });
-      const data = await res.json();
-      appendLog(data.status || data.error);
-    } catch (err) {
-      appendLog("Connect error: " + err.message);
+  const handleFieldChange = (i, key, val) => {
+    const updated = [...fields];
+    updated[i] = { ...updated[i], [key]: val };
+    setFields(updated);
+  };
+
+  // add field
+  const handleAddField = () => {
+    setFields([...fields, { id: Date.now(), bit: "", value: "" }]);
+  };
+
+  // remove field
+  const handleRemoveField = (i) => {
+    const updated = fields.filter((_, idx) => idx !== i);
+    setFields(
+      updated.length > 0
+        ? updated
+        : [{ id: Date.now(), bit: "", value: "" }] 
+    );
+  };
+
+  const handleBuild = () => {
+    const msgFields = {};
+    fields.forEach((f) => {
+      if (f.bit.trim() && f.value.trim()) msgFields[f.bit] = f.value;
+    });
+
+    if (Object.keys(msgFields).length === 0) {
+      setEditorWarning("! Please enter at least one Bit/Value to build.");
+      return;
     }
+
+    const msg = {
+      header: "600000000310",
+      transactionCode: transactionCode || "00",
+      responseCode: "00",
+      moreIndicator: "0",
+      fields: msgFields,
+    };
+
+    const buf = HypercomMessageHelper.build(msg);
+    const hexStr =
+      buf.toString("hex").toUpperCase().match(/.{1,2}/g)?.join(" ") || "";
+    setEditHex(hexStr);
+    setCommand(hexStr); // sync ไปช่อง Send
+    setEditorWarning("");
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target.result;
+      const lines = text.split(/\r?\n/);
+
+      let importedCommands = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim() === "SEND") {
+          const order = lines[i + 1]?.trim(); // ไม่ใช้
+          const name = lines[i + 2]?.trim();  // ชื่อ command
+          const hex = lines[i + 3]?.trim();   // HEX
+          if (name && hex) {
+            importedCommands.push({ name, hex });
+          }
+          i += 5; // ข้าม block SEND
+        }
+      }
+      setCommands((prev) => [...prev, ...importedCommands]);
+    };
+
+    reader.readAsText(file);
   };
 
   const sendCommand = async (hexCommand) => {
@@ -136,79 +205,211 @@ function App() {
       {/* Main Content */}
       <div style={{ display: "flex", flexDirection: "row", gap: "20px", width: "100%" }}>
         {/* Left Column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "40%" }}>
-          <button onClick={cancelAll}
-            style={{
-              padding: "6px 12px",
-              fontSize: "14px",
-              fontWeight: "800",
-              borderRadius: "5px",
-              cursor: "pointer",
-              backgroundColor: "#bcddff",
-              border: "none",
-            }}>Cancel</button>
+        <div style={{ display: "flex", width: "100%", gap: "20px" }}>
+          {/* ฝั่งซ้าย */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "10px", width: "50%" }}>
+            <button onClick={cancelAll}
+              style={{
+                padding: "6px 12px",
+                fontSize: "14px",
+                fontWeight: "800",
+                borderRadius: "5px",
+                cursor: "pointer",
+                backgroundColor: "#bcddff",
+                border: "none",
+              }}>Cancel</button>
 
-          <button onClick={() => setShowAddModal(true)}
-            style={{
-              padding: "6px 12px",
-              fontSize: "14px",
-              fontWeight: "800",
-              borderRadius: "5px",
-              cursor: "pointer",
-              backgroundColor: "#bcddff",
-              border: "none",
-            }}
-          >Add Command</button>
 
-          {showAddModal && (
-            <div style={{ marginTop: "10px", padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
-              <input
-                type="text"
-                placeholder="Command Name"
-                value={newCommandName}
-                onChange={(e) => setNewCommandName(e.target.value)}
-                style={{ width: "100%", marginBottom: "8px", padding: "6px" }}
-              />
-              <input
-                type="text"
-                placeholder="HEX Command"
-                value={newCommandHex}
-                onChange={(e) => setNewCommandHex(e.target.value)}
-                style={{ width: "100%", marginBottom: "8px", padding: "6px" }}
-              />
-              <div style={{ display: "flex", gap: "8px" }}>
-                <button onClick={saveCommand} style={{ flex: 1, padding: "6px", background: "#d4f7d4", border: "none", borderRadius: "5px" }}>Save</button>
-                <button onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: "6px", background: "#f7d4d4", border: "none", borderRadius: "5px" }}>Cancel</button>
+            <input type="file" accept=".ptp,.txt" onChange={handleFileUpload} style={{ marginTop: "10px" }} />
+
+            {/* Editor ใช้ร่วมกัน */}
+            <div style={{ padding: "10px", border: "none" }}>
+              <div>
+                <p style={{ fontSize: "16px", fontWeight: "500", margin: 0 }}>Edit Commands :</p>
               </div>
-            </div>
-          )}
 
-          {commands.length > 0 && (
-            <div style={{ marginTop: "20px" }}>
-              <p>Saved Commands:</p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                {commands.map((cmd, idx) => (
-                  <button style={{
-                    padding: "10px 12px",
-                    fontSize: "16px",
-                    fontWeight: "400",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                    backgroundColor: "#ffe869",
-                    border: "1px solid #000",
-                    width: "100%",
-                    textAlign: "center",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                    key={idx} onClick={() => sendCommand(cmd.hex)}>
-                    {cmd.name}
-                  </button>
+              {/* ชื่อ command */}
+              <div>
+                <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>Name :</p>
+                <input
+                  type="text"
+                  placeholder="Sale 56 1.00 Bth"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  style={{ width: "100%", marginBottom: "8px", padding: "6px" }}
+                />
+              </div>
+              {/* เลข command (HEX)*/}
+              <div>
+                <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>HEX Command :</p>
+                <input
+                  type="text"
+                  placeholder="02 00 35 36 30 30 30 ... 15"
+                  value={editHex}
+                  onChange={(e) => setEditHex(e.target.value)}
+                  style={{ width: "100%", marginBottom: "8px", padding: "6px" }}
+                />
+              </div>
+              {/* ✅ Transaction Code Input */}
+              <div>
+                <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>Transaction Code :</p>
+                <input
+                  type="text"
+                  placeholder="20"
+                  value={transactionCode}
+                  onChange={(e) => setTransactionCode(e.target.value)}
+                  style={{ width: "100%", marginBottom: "8px", padding: "6px" }}
+                />
+              </div>
+
+              {/* ✅ Dynamic Bit/Value */}
+              <div>
+                <p style={{ fontSize: "14px", fontWeight: "500" }}>Bit and Value :</p>
+                {fields.map((f, i) => (
+                  <div key={f.id} style={{ display: "flex", gap: "8px", marginBottom: "6px" }}>
+                    <input
+                      type="text"
+                      placeholder="Bit"
+                      value={f.bit}
+                      onChange={(e) => handleFieldChange(i, "bit", e.target.value)}
+                      style={{ flex: 1, padding: "6px" }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Value"
+                      value={f.value}
+                      onChange={(e) => handleFieldChange(i, "value", e.target.value)}
+                      style={{ flex: 3, padding: "6px"}}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveField(i)}
+                      style={{
+                        color: "black",
+                        background: "none",
+                        border: "none",
+                        paddingLeft: "10px",
+                        paddingRight: "10px",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        borderRadius: "50px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      ⌫
+                    </button>
+                  </div>
                 ))}
+                <button
+                  onClick={handleAddField}
+                  style={{ marginTop: "5px", padding: "6px 12px", background: "#d4e4f7", borderRadius: "5px", border: "none" }}
+                >
+                  + Add Field
+                </button>
+              </div>
+
+
+              {/* แสดง warning ถ้ามี */}
+              {editorWarning && (
+                <p style={{ color: "red", margin: "4px 0" }}>{editorWarning}</p>
+              )}
+
+              <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
+
+                <button
+                  onClick={handleBuild}
+                  style={{ flex: 1, padding: "6px", background: "#d4e4f7", border: "none", borderRadius: "5px" }}
+                >
+                  Build
+                </button>
+                <button
+                  onClick={() => {
+                    if (!editName.trim() || !editHex.trim()) {
+                      // ถ้ามี warning อยู่แล้ว ไม่ต้อง set ใหม่
+                      if (!editorWarning) {
+                        setEditorWarning("! Please enter name and HEX command before saving.");
+                      }
+                      return;
+                    }
+
+                    const updated = [...commands];
+                    if (editIndex !== null) {
+                      // แก้ไข command เดิม
+                      updated[editIndex] = { name: editName, hex: editHex };
+                    } else {
+                      // เพิ่ม command ใหม่
+                      updated.push({ name: editName, hex: editHex });
+                    }
+
+                    setCommands(updated);// reset editor
+                    setEditIndex(null);
+                    setEditName("");
+                    setEditHex("");
+                    setEditorWarning(""); // clear warning
+                  }}
+                  style={{ flex: 1, padding: "6px", background: "#d4f7d4", border: "none", borderRadius: "5px" }}
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    setEditIndex(null);
+                    setEditName("");
+                    setEditHex("");
+                    setEditorWarning("");// clear warning
+                    setTransactionCode("");
+                    handleFieldChange(0, "bit", "");
+                    handleFieldChange(0, "value", "");
+                  }}
+                  style={{ flex: 1, padding: "6px", background: "#f7d4d4", border: "none", borderRadius: "5px" }}
+                >
+                  Clear
+                </button>
               </div>
             </div>
-          )}
+          </div>
+
+          {/* ฝั่งขวา */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "10px", width: "50%" }}>
+            <div>
+              <p style={{ fontSize: "16px", fontWeight: "500", margin: 0 }}>Saved Commands:</p>
+            </div>
+            {/* Saved Commands */}
+            {commands.length > 0 && (
+              <div style={{ marginTop: "20px" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {commands.map((cmd, idx) => (
+                    <button
+                      key={idx}
+                      style={{
+                        padding: "10px 12px",
+                        fontSize: "16px",
+                        fontWeight: "400",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        backgroundColor: "#ffe869",
+                        border: "1px solid #000",
+                        width: "100%",
+                        textAlign: "center",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                      onClick={() => {
+                        setCommand(cmd.hex);
+                        setEditIndex(idx);
+                        setEditName(cmd.name);
+                        setEditHex(cmd.hex);
+                      }}
+                    >
+                      {cmd.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Column */}
