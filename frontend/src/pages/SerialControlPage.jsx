@@ -1,10 +1,10 @@
-import { useState, useEffect,useRef  } from "react";
+import { useState, useEffect, useRef } from "react";
 import ConnectionSettings from "../components/ConnectionSettings";
 import CommandEditor from "../components/CommandEditor";
 import SavedCommands from "../components/SavedCommands";
 import SendCommandPanel from "../components/SendCommandPanel";
 import LogsPanel from "../components/LogsPanel";
-
+import FilesUpload from "../components/FilesUpload";
 
 export default function SerialControlPage() {
   const [ports, setPorts] = useState([]);
@@ -19,7 +19,9 @@ export default function SerialControlPage() {
   const [editHex, setEditHex] = useState("");
   const [editorWarning, setEditorWarning] = useState("");
   const [transactionCode, setTransactionCode] = useState("");
-  const [fields, setFields] = useState([{ id: Date.now(), bit: "", value: "" }]);
+  const [fields, setFields] = useState([
+    { id: Date.now(), bit: "", value: "" },
+  ]);
   const logEndRef = useRef(null);
   const appendLog = (msg) => setLogs((prev) => [...prev, msg]);
 
@@ -46,62 +48,111 @@ export default function SerialControlPage() {
   }, [logs]);
 
   return (
-    <div style={{ padding: "20px", width: "100vh", height: "100vh", boxSizing: "border-box" }}>
-      <h2 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "20px" }}>Serial Web Control</h2>
+    <div>
+      <div
+        style={{
+          padding: "20px",
+          width: "100vw",
+          height: "100vh",
+          boxSizing: "border-box",
+        }}
+      >
+        <h2
+          style={{ fontSize: "18px", fontWeight: "800", marginBottom: "20px" }}
+        >
+          Serial Web Control
+        </h2>
 
-      <ConnectionSettings
-        ports={ports}
-        baudrates={baudrates}
-        selectedPort={selectedPort}
-        setSelectedPort={setSelectedPort}
-        selectedBaudrate={selectedBaudrate}
-        setSelectedBaudrate={setSelectedBaudrate}
-      />
+        <ConnectionSettings
+          ports={ports}
+          baudrates={baudrates}
+          selectedPort={selectedPort}
+          setSelectedPort={setSelectedPort}
+          selectedBaudrate={selectedBaudrate}
+          setSelectedBaudrate={setSelectedBaudrate}
+        />
 
-      <div style={{ display: "flex", flexDirection: "row", gap: "20px", width: "100%" }}>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "10px" }}>
-          <CommandEditor
-            commands={commands}
-            setCommands={setCommands}
-            editName={editName}
-            setEditName={setEditName}
-            editHex={editHex}
-            setEditHex={setEditHex}
-            editIndex={editIndex}
-            setEditIndex={setEditIndex}
-            transactionCode={transactionCode}
-            setTransactionCode={setTransactionCode}
-            fields={fields}
-            setFields={setFields}
-            appendLog={appendLog}
-            editorWarning={editorWarning}
-            setEditorWarning={setEditorWarning}
-            setCommand={setCommand}
-          />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: "20px",
+            width: "100%",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              gap: "20px",
+              width: "30%",
+            }}
+          >
+            <div
+              style={{
+                width: "65%",
+              }}
+            >
+              <CommandEditor
+                commands={commands}
+                setCommands={setCommands}
+                editName={editName}
+                setEditName={setEditName}
+                editHex={editHex}
+                setEditHex={setEditHex}
+                editIndex={editIndex}
+                setEditIndex={setEditIndex}
+                transactionCode={transactionCode}
+                setTransactionCode={setTransactionCode}
+                fields={fields}
+                setFields={setFields}
+                appendLog={appendLog}
+                editorWarning={editorWarning}
+                setEditorWarning={setEditorWarning}
+                setCommand={setCommand}
+              />
+            </div>
 
-          <SavedCommands
-            commands={commands}
-            setEditName={setEditName}
-            setEditHex={setEditHex}
-            setEditIndex={setEditIndex}
-            setCommand={setCommand}
-          />
-        </div>
+            <div
+              style={{
+                width: "35%",
+              }}
+            >
+              <FilesUpload setCommands={setCommands} />
+              <SavedCommands
+                commands={commands}
+                setEditName={setEditName}
+                setEditHex={setEditHex}
+                setEditIndex={setEditIndex}
+                setCommand={setCommand}
+              />
+            </div>
+          </div>
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "20px" }}>
-          <SendCommandPanel
-            command={command}
-            setCommand={setCommand}
-            selectedPort={selectedPort}
-            selectedBaudrate={selectedBaudrate}
-            appendLog={appendLog}
-          />
-
-          <LogsPanel logs={logs} logEndRef={logEndRef} />
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
+              width: "70%",
+            }}
+          >
+            <div style={{height: "30%"}}>
+              <SendCommandPanel
+                command={command}
+                setCommand={setCommand}
+                selectedPort={selectedPort}
+                selectedBaudrate={selectedBaudrate}
+                appendLog={appendLog}
+              />
+            </div>
+            <div style={{height: "70%"}}>
+              <LogsPanel logs={logs} logEndRef={logEndRef} />
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
-

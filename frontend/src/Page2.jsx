@@ -3,7 +3,7 @@ import { HypercomMessageHelper } from './utils/HypercomMessageHelper';
 import { Buffer } from 'buffer';
 import { MsgUtils } from './utils/MsgUtils';
 
-export default function Page2() {
+export default function  Page2() {
   const [header, setHeader] = useState("600000000010");
   const [transactionCode, setTransactionCode] = useState("20");
   const [responseCode, setResponseCode] = useState("00");

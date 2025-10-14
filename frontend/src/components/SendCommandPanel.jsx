@@ -62,16 +62,16 @@ export default function SendCommandPanel({
         Send Command
       </button>
 
-      <div style={{ display: "flex", gap: "15px" }}>
+      <div style={{display:"flex", flexDirection:"column", marginBottom:"20px"}}>
         <p style={{ fontSize: "16px", fontWeight: "500", margin: 0 }}>HEX Command:</p>
         <textarea
           value={command}
           onChange={(e) => setCommand(e.target.value)}
           placeholder="02 00 35 36 30 30 30 ..."
           style={{
-            flex: 1,
+
             height: "200px",
-            width: "500px",
+            width: "100%",
             backgroundColor: "#fff",
             color: "rgba(0, 0, 0, 1)",
             padding: "8px",
