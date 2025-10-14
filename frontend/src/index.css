@@ -23,7 +23,8 @@ body {
   margin: 0;
   display: flex;
   place-items: center;
-  width: 100%;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 h1 {
