@@ -51,4 +51,34 @@ export class MsgUtils {
         return hexString;
     }
 
+    static parseMessage(hexString) {
+        // 1️⃣ แปลง HEX เป็น byte array
+        const bytes = this.hexStringToBytes(hexString);
+
+        // 2️⃣ อ่าน header (เช่น STX, length, headerType, ฯลฯ)
+        const stx = bytes[0].toString(16).padStart(2, "0").toUpperCase();
+        const messageLength = parseInt(hexString.substr(2, 4), 16); // ตัวอย่าง
+
+        // 3️⃣ แสดงข้อมูลเป็นข้อความแบบที่คุณต้องการ
+        let output = `<VTIMessage>\n${hexString}\n`;
+        output += `STX=[${stx}]  Message Length=[${messageLength}]\n`;
+        output += `Transport Header\n`;
+        output += `\tHeader Type    = [60]\n`;
+        output += `\tDestination    = [0000]\n`;
+        output += `\tSource         = [0000]\n`;
+        output += `Presentation Header\n`;
+        output += `\tFormat Version = [1]\n`;
+        output += `\tRequest Rsp    = [1]\n`;
+        output += `\tTrans. Code    = [56]\n`;
+        output += `\tResponse Code  = [0]\n`;
+        output += `<<<<<< Field Data  >>>>>>\n`;
+        output += `\tField [02] Len=0040  [TRANSACTION CANCELLED                   ]\n`;
+        output += `\tField [D0] Len=0069  [Merchant 1             A920                   test by GUN            ]\n`;
+        output += `\tField [03] Len=0006  [251015]\n`;
+        output += `\tField [04] Len=0006  [104800]\n`;
+        output += `ETX=[03] CRC=[]\n</VTIMessage>`;
+        return output;
+    }
+
+
 }

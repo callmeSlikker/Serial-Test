@@ -24,6 +24,8 @@ export default function CommandEditor({
   setEditorWarning,
   setCommand,
 }) {
+
+
   const handleFieldChange = (i, key, val) => {
     const updated = [...fields];
     updated[i] = { ...updated[i], [key]: val };

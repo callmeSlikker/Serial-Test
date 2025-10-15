@@ -3,7 +3,7 @@ import { HypercomMessageHelper } from './utils/HypercomMessageHelper';
 import { Buffer } from 'buffer';
 import { MsgUtils } from './utils/MsgUtils';
 
-export default function  Page2() {
+export default function Page2() {
   const [header, setHeader] = useState("600000000010");
   const [transactionCode, setTransactionCode] = useState("20");
   const [responseCode, setResponseCode] = useState("00");
@@ -17,7 +17,7 @@ export default function  Page2() {
   const [output, setOutput] = useState("");
   const [responseMessage, setresponseMessage] = useState("");
 
-  const Cmmond20 = ["02", "D0", "03", "04", "01", "65", "16", "D1", "D2", '30', "31", "50", "D3"]
+  const Cmmond20 = ["02", "D0", "03", "04", "01", "65", "16", "D1", "D2", '30', "31", "50", "D3" , "D4"]
 
   const resp20 = "02029436303030303030303030313135363030301C30320040303139393939393032303030303030323530303030303030303030313530303030303030303030311C443000694D65726368616E742031202020202020202020202020204D65726368616E745F41646431202020202020202020204D65726368616E745F41646431202020202020202020201C303300063235313030391C303400063137313732301C303100063032303033381C363500063030303032381C3136000838303232353530321C443100153030303030323230303836393235331C44320010564953412D43415244201C33300016343339313337585858585858313130371C33310004585858581C353000063030303030311C443300123030303032313034393836301C4434000230341C03D1"
 
@@ -59,55 +59,42 @@ export default function  Page2() {
 
     }
     return msgStr
- 
+
   };
 
   const TestValidateFfield = () => {
-
-    // const msg = HypercomMessageHelper.build({
-    //   header: 'TESTHEADER',
-    //   transactionCode: '01',
-    //   responseCode: '00',
-    //   moreIndicator: '0',
-    //   fields: {
-    //     '01': 'CustomerName',
-    //     '02': '12345678',
-    //     '03': 'Approved'
-    //   }
-    // });
-    // setHex(msg.toString('hex').toUpperCase());
-    // setTags(HypercomMessageHelper.getTagList(msg));
-
-    // const msg = {
-    //   header: '600000000310',
-    //   transactionCode: 'P3',
-    //   responseCode: '00',
-    //   moreIndicator: '0',
-    //   fields: {
-    //     '40': '000000000100',
-    //     '30': '6223540009288112',
-    //     '31': '0728',
-    //     'D3': '998877665544'
-    //   }
-    // }
-
-    // const buf = HypercomMessageHelper.build(msg)
-    // console.log('Buffer:', buf);
-
-    const buff = Buffer.from(resp20.trim(), "hex")
+    const buff = Buffer.from(resp20.trim(), "hex");
     const obj = HypercomMessageHelper.parse(buff);
-    let msgStr = resp20.trim() + "\n";
 
-    msgStr += obj.header + "\n";
-    msgStr += obj.transactionCode + "\n";
-    msgStr += obj.responseCode + "\n";
-    msgStr += obj.moreIndicator + "\n";
+    let msgStr = "<VTIMessage>\n";
+    msgStr += resp20.trim() + "\n";
+    msgStr += `STX=[02]  Message Length=[${buff[1]}]\n`;
 
-    msgStr += CheckField(obj.transactionCode ,buff)
+    msgStr += "Transport Header\n";
+    msgStr += `\tHeader Type    = [${obj.headerType}]\n`;
+    msgStr += `\tDestination    = [${obj.destination}]\n`;
+    msgStr += `\tSource         = [${obj.source}]\n`;
+
+    msgStr += "Presentation Header\n";
+    msgStr += `\tFormat Version = [${obj.formatVersion}]\n`;
+    msgStr += `\tRequest Rsp    = [${obj.requestRsp}]\n`;
+    msgStr += `\tTrans. Code    = [${obj.transactionCode}]\n`;
+    msgStr += `\tResponse Code  = [${obj.responseCode}]\n`;
+    msgStr += `\tMore Indicator = [${obj.moreIndicator}]\n`;
+
+    msgStr += "<<<<<< Field Data  >>>>>>\n";
+
+    const allFields = HypercomMessageHelper.getTagList(buff);
+    allFields.forEach(f => {
+      msgStr += `\tField [${f.tag}] Len=${f.length.toString().padStart(4, "0")}  [${f.value}]  \n`;
+    });
+
+    msgStr += "ETX=[03] CRC=[]\n";
+    msgStr += "</VTIMessage>";
 
     setresponseMessage(msgStr);
-   
   };
+
 
   const handleBuild = () => {
     const obj = {

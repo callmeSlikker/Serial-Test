@@ -5,6 +5,7 @@ import SavedCommands from "../components/SavedCommands";
 import SendCommandPanel from "../components/SendCommandPanel";
 import LogsPanel from "../components/LogsPanel";
 import FilesUpload from "../components/FilesUpload";
+import ExportCommands from "../components/ExportCommand";
 
 export default function SerialControlPage() {
   const [ports, setPorts] = useState([]);
@@ -119,6 +120,7 @@ export default function SerialControlPage() {
               }}
             >
               <FilesUpload setCommands={setCommands} />
+              <ExportCommands commands={commands} />
               <SavedCommands
                 commands={commands}
                 setEditName={setEditName}
@@ -138,7 +140,7 @@ export default function SerialControlPage() {
               width: "70%",
             }}
           >
-            <div style={{height: "30%"}}>
+            <div style={{height: "15%"}}>
               <SendCommandPanel
                 command={command}
                 setCommand={setCommand}
@@ -147,7 +149,7 @@ export default function SerialControlPage() {
                 appendLog={appendLog}
               />
             </div>
-            <div style={{height: "70%"}}>
+            <div style={{height: "85%"}}>
               <LogsPanel logs={logs} logEndRef={logEndRef} />
             </div>
           </div>

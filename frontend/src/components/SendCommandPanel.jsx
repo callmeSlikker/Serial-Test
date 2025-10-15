@@ -70,7 +70,7 @@ export default function SendCommandPanel({
           placeholder="02 00 35 36 30 30 30 ..."
           style={{
 
-            height: "200px",
+            height: "100%",
             width: "100%",
             backgroundColor: "#fff",
             color: "rgba(0, 0, 0, 1)",

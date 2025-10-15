@@ -7,9 +7,9 @@ export default function SavedCommands({
 }) {
   console.log("commasasdnds", commands)
   return (
-    <div style={{ marginTop: "20px"}}>
+    <div style={{ marginTop: "20px" , overflowY: "scroll", height: "700px" }}>
       <p style={{ fontSize: "16px", fontWeight: "500", margin: 0 }}>Saved Commands:</p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "10px",overflowY: "scroll", height: "700px" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "10px" }}>
         {commands.map((cmd, idx) => (
           <button
             key={idx}

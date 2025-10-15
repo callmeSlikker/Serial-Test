@@ -149,14 +149,18 @@ def sendCommand():
         last_data_time = time.time()
         max_wait = 60  # วินาที
 
+        is_end = False
         while True:
             chunk = ser.read(1)
             if chunk:
                 response_bytes.extend(chunk)
+                if is_end:
+                    break
                 last_data_time = time.time()
                 # หยุดเมื่อเจอ 1C03
                 if response_bytes.endswith(b'\x1C\x03'):
-                    break
+                    is_end = True
+                    # break
             else:
                 if time.time() - last_data_time > max_wait:
                     log_messages.append(f"{timestamp()} - Response timeout")
