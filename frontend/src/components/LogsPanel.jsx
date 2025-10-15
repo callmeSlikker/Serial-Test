@@ -108,7 +108,7 @@ export default function LogsPanel({ logs, setLogs, logEndRef }) {
               return line;
             })
             .join("\n")}
-          <div ref={logEndRef} />
+          <div ref={logEndRef} /> 
         </pre>
       );
     }
@@ -172,7 +172,7 @@ export default function LogsPanel({ logs, setLogs, logEndRef }) {
       </div>
       <div>
         <button
-          onClick={() => LogsPanel([])}
+          onClick={() => setLogs([])}
           style={{
             flex: 1,
             padding: "1px",

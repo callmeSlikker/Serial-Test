@@ -1,44 +1,39 @@
 import { HypercomMessageHelper } from "../utils/HypercomMessageHelper";
 
-export default function CommandEditor({
-  commands,
-  setCommands,
-  editName,
-  setEditName,
-  editHex,
-  setEditHex,
-  editIndex,
-  setEditIndex,
-  header,
-  setHeader,
-  transactionCode,
-  setTransactionCode,
-  responseCode,
-  setResponseCode,
-  moreIndicator,
-  setMoreIndicator,
-  fields,
-  setFields,
-  appendLog,
-  editorWarning,
-  setEditorWarning,
-  setCommand,
-}) {
+export default function CommandEditor({ formCommandEditorValue, setFormCommandEditorValue }) {
+  const {
+    commands,
+    editIndex,
+    editName,
+    editHex,
+    editorWarning,
+    transactionCode,
+    header,
+    responseCode,
+    moreIndicator,
+    fields,
+  } = formCommandEditorValue;
 
+  // --- State Update Helper ---
+  const updateForm = (key, value) => {
+    setFormCommandEditorValue((prev) => ({ ...prev, [key]: value }));
+  };
 
+  // --- Handlers ---
   const handleFieldChange = (i, key, val) => {
     const updated = [...fields];
     updated[i] = { ...updated[i], [key]: val };
-    setFields(updated);
+    updateForm("fields", updated);
   };
 
   const handleAddField = () => {
-    setFields([...fields, { id: Date.now(), bit: "", value: "" }]);
+    updateForm("fields", [...fields, { id: Date.now(), bit: "", value: "" }]);
   };
 
   const handleRemoveField = (i) => {
     const updated = fields.filter((_, idx) => idx !== i);
-    setFields(
+    updateForm(
+      "fields",
       updated.length > 0 ? updated : [{ id: Date.now(), bit: "", value: "" }]
     );
   };
@@ -50,15 +45,15 @@ export default function CommandEditor({
     });
 
     if (Object.keys(msgFields).length === 0) {
-      setEditorWarning("! Please enter at least one Bit/Value to build.");
+      updateForm("editorWarning", "! Please enter at least one Bit/Value to build.");
       return;
     }
 
     const msg = {
-      header: header || "600000000010", // ใช้จาก state
-      transactionCode: transactionCode || "00", // ใช้จาก state
-      responseCode: responseCode || "00", // ใช้จาก state
-      moreIndicator: moreIndicator || "0", // ใช้จาก state
+      header: header || "600000000010",
+      transactionCode: transactionCode || "00",
+      responseCode: responseCode || "00",
+      moreIndicator: moreIndicator || "0",
       fields: msgFields,
     };
 
@@ -70,127 +65,150 @@ export default function CommandEditor({
           .toUpperCase()
           .match(/.{1,2}/g)
           ?.join(" ") || "";
-      setEditHex(hexStr);
-      setCommand(hexStr);
-      setEditorWarning("");
+      updateForm("editHex", hexStr);
+      updateForm("command", hexStr);
+      updateForm("editorWarning", "");
     } catch (err) {
-      setEditorWarning(`Error building message: ${err.message}`);
+      updateForm("editorWarning", `Error building message: ${err.message}`);
     }
   };
 
+  const handleSave = () => {
+    if (!editName.trim() || !editHex.trim()) {
+      if (!editorWarning)
+        updateForm(
+          "editorWarning",
+          "! Please enter name and HEX command before saving."
+        );
+      return;
+    }
+
+    const updated = [...commands];
+    if (editIndex !== null) {
+      updated[editIndex] = { name: editName, hex: editHex };
+    } else {
+      updated.push({ name: editName, hex: editHex });
+    }
+
+    updateForm("commands", updated);
+    updateForm("editIndex", null);
+    updateForm("editName", "");
+    updateForm("editHex", "");
+    updateForm("editorWarning", "");
+  };
+
+  const handleClear = () => {
+    setFormCommandEditorValue((prev) => ({
+      ...prev,
+      editIndex: null,
+      editName: "",
+      editHex: "",
+      editorWarning: "",
+      transactionCode: "",
+      fields: [{ id: Date.now(), bit: "", value: "" }],
+    }));
+  };
+
+  // --- UI ---
   return (
     <div style={{ padding: "10px", border: "none" }}>
       <p style={{ fontSize: "16px", fontWeight: "500", margin: 0 }}>
         Edit Commands :
       </p>
 
+      {/* Name */}
       <div>
         <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>Name :</p>
         <input
           type="text"
           placeholder="Sale 56 1.00 Bth"
           value={editName}
-          onChange={(e) => setEditName(e.target.value)}
+          onChange={(e) => updateForm("editName", e.target.value)}
           style={{ width: "100%", marginBottom: "8px", padding: "6px" }}
         />
       </div>
 
+      {/* HEX Command */}
       <div>
-        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>
-          HEX Command :
-        </p>
+        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>HEX Command :</p>
         <input
           type="text"
           placeholder="02 00 35 36 ..."
           value={editHex}
-          onChange={(e) => setEditHex(e.target.value)}
+          onChange={(e) => updateForm("editHex", e.target.value)}
           style={{ width: "100%", marginBottom: "8px", padding: "6px" }}
         />
       </div>
 
+      {/* Header */}
       <div>
-        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>
-          Header :
-        </p>
+        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>Header :</p>
         <input
           type="text"
           placeholder="600000000010"
           value={header}
-          onChange={(e) => setHeader(e.target.value)}
+          onChange={(e) => updateForm("header", e.target.value)}
           style={{ width: "100%", marginBottom: "8px", padding: "6px" }}
         />
       </div>
 
+      {/* Transaction Code */}
       <div>
-        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>
-          Transaction Code :
-        </p>
+        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>Transaction Code :</p>
         <input
           type="text"
           placeholder="20"
           value={transactionCode}
-          onChange={(e) => setTransactionCode(e.target.value)}
+          onChange={(e) => updateForm("transactionCode", e.target.value)}
           style={{ width: "100%", marginBottom: "8px", padding: "6px" }}
         />
       </div>
 
+      {/* Response Code */}
       <div>
-        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>
-          Response Code :
-        </p>
+        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>Response Code :</p>
         <input
           type="text"
           placeholder="00"
           value={responseCode}
-          onChange={(e) => setResponseCode(e.target.value)}
+          onChange={(e) => updateForm("responseCode", e.target.value)}
           style={{ width: "100%", marginBottom: "8px", padding: "6px" }}
         />
       </div>
 
+      {/* More Indicator */}
       <div>
-        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>
-          More Indicator :
-        </p>
+        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>More Indicator :</p>
         <input
           type="text"
           placeholder="0"
           value={moreIndicator}
-          onChange={(e) => setMoreIndicator(e.target.value)}
+          onChange={(e) => updateForm("moreIndicator", e.target.value)}
           style={{ width: "100%", marginBottom: "8px", padding: "6px" }}
         />
       </div>
 
-      <div
-        style={{
-          width: "100%",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+      {/* Bit / Value fields */}
+      <div style={{ width: "100%", display: "flex", flexDirection: "column" }}>
         <p style={{ fontSize: "14px", fontWeight: "500", marginBottom: "0px" }}>
           Bit and Value :
         </p>
+
         <button
           onClick={handleAddField}
           style={{
             alignSelf: "end",
             marginBottom: "10px",
             padding: "6px 12px",
-            background: "#ffffffff",
+            background: "#fff",
             borderRadius: "5px",
-            border: "none",
-            border: "1px solid #000000ff",
-            maxHeight: "200px", // 👈 limit height (adjust as needed)
-            overflowY: "auto", // 👈 enables vertical scrolling
-            border: "1px solid #ccc", // optional: for clarity
-            padding: "8px",
-            borderRadius: "6px",
-            boxSizing: "border-box",
-            marginBottom: "10px",
+            border: "1px solid #000",
+            cursor: "pointer",
           }}
         >
           + Add Field
         </button>
+
         {fields.map((f, i) => (
           <div
             key={f.id}
@@ -233,10 +251,12 @@ export default function CommandEditor({
         ))}
       </div>
 
+      {/* Warning */}
       {editorWarning && (
         <p style={{ color: "red", margin: "4px 0" }}>{editorWarning}</p>
       )}
 
+      {/* Buttons */}
       <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
         <button
           onClick={handleBuild}
@@ -252,28 +272,7 @@ export default function CommandEditor({
         </button>
 
         <button
-          onClick={() => {
-            if (!editName.trim() || !editHex.trim()) {
-              if (!editorWarning)
-                setEditorWarning(
-                  "! Please enter name and HEX command before saving."
-                );
-              return;
-            }
-
-            const updated = [...commands];
-            if (editIndex !== null) {
-              updated[editIndex] = { name: editName, hex: editHex };
-            } else {
-              updated.push({ name: editName, hex: editHex });
-            }
-
-            setCommands(updated);
-            setEditIndex(null);
-            setEditName("");
-            setEditHex("");
-            setEditorWarning("");
-          }}
+          onClick={handleSave}
           style={{
             flex: 1,
             padding: "6px",
@@ -286,14 +285,7 @@ export default function CommandEditor({
         </button>
 
         <button
-          onClick={() => {
-            setEditIndex(null);
-            setEditName("");
-            setEditHex("");
-            setEditorWarning("");
-            setTransactionCode("");
-            setFields([{ id: Date.now(), bit: "", value: "" }]);
-          }}
+          onClick={handleClear}
           style={{
             flex: 1,
             padding: "6px",

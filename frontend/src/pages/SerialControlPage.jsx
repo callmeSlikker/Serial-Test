@@ -8,33 +8,44 @@ import FilesUpload from "../components/FilesUpload";
 import ExportCommands from "../components/ExportCommand";
 
 export default function SerialControlPage() {
-  const [ports, setPorts] = useState([]);
-  const [baudrates] = useState(["9600", "115200"]);
-  const [selectedPort, setSelectedPort] = useState("");
-  const [selectedBaudrate, setSelectedBaudrate] = useState("9600");
-  const [command, setCommand] = useState("");
   const [logs, setLogs] = useState([]);
-  const [commands, setCommands] = useState([]);
-  const [editIndex, setEditIndex] = useState(null);
-  const [editName, setEditName] = useState("");
-  const [editHex, setEditHex] = useState("");
-  const [editorWarning, setEditorWarning] = useState("");
-  const [transactionCode, setTransactionCode] = useState("");
-  const [fields, setFields] = useState([
-    { id: Date.now(), bit: "", value: "" },
-  ]);
+
+  const [formCommandEditorValue, setFormCommandEditorValue] = useState({
+    ports: [],
+    baudrates: [9600, 19200, 38400, 57600, 115200],
+    selectedPort: "",
+    selectedBaudrate: "",
+    command: "",
+    commands: [],
+    editIndex: null,
+    editName: "",
+    editHex: "",
+    editorWarning: "",
+    transactionCode: "56",
+    header: "600000000010",
+    responseCode: "00",
+    moreIndicator: "0",
+    fields: [{ id: Date.now(), bit: "", value: "" }],
+  });
+
   const logEndRef = useRef(null);
+
   const appendLog = (msg) => setLogs((prev) => [...prev, msg]);
 
-  // ดึง COM ports
+  // helper to update formCommandEditorValue easily
+  const updateForm = (key, value) => {
+    setFormCommandEditorValue((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // fetch COM ports
   useEffect(() => {
     async function fetchPorts() {
       try {
         const res = await fetch("http://127.0.0.1:5000/ports");
         const data = await res.json();
         if (data.ports && data.ports.length > 0) {
-          setPorts(data.ports);
-          setSelectedPort(data.ports[0]);
+          updateForm("ports", data.ports);
+          updateForm("selectedPort", data.ports[0]);
         }
       } catch (err) {
         appendLog("Error loading ports: " + err.message);
@@ -43,10 +54,19 @@ export default function SerialControlPage() {
     fetchPorts();
   }, []);
 
-  // scroll logs
+  // auto-scroll logs
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
+
+  const {
+    ports,
+    baudrates,
+    selectedPort,
+    selectedBaudrate,
+    commands,
+    command,
+  } = formCommandEditorValue;
 
   return (
     <div>
@@ -64,13 +84,14 @@ export default function SerialControlPage() {
           Serial Web Control
         </h2>
 
+        {/* Connection Settings */}
         <ConnectionSettings
           ports={ports}
           baudrates={baudrates}
           selectedPort={selectedPort}
-          setSelectedPort={setSelectedPort}
+          setSelectedPort={(val) => updateForm("selectedPort", val)}
           selectedBaudrate={selectedBaudrate}
-          setSelectedBaudrate={setSelectedBaudrate}
+          setSelectedBaudrate={(val) => updateForm("selectedBaudrate", val)}
         />
 
         <div
@@ -81,6 +102,7 @@ export default function SerialControlPage() {
             width: "100%",
           }}
         >
+          {/* Left side: Command Editor + Saved Commands */}
           <div
             style={{
               display: "flex",
@@ -89,48 +111,31 @@ export default function SerialControlPage() {
               width: "30%",
             }}
           >
-            <div
-              style={{
-                width: "65%",
-              }}
-            >
+            {/* Command Editor */}
+            <div style={{ width: "65%" }}>
               <CommandEditor
-                commands={commands}
-                setCommands={setCommands}
-                editName={editName}
-                setEditName={setEditName}
-                editHex={editHex}
-                setEditHex={setEditHex}
-                editIndex={editIndex}
-                setEditIndex={setEditIndex}
-                transactionCode={transactionCode}
-                setTransactionCode={setTransactionCode}
-                fields={fields}
-                setFields={setFields}
-                appendLog={appendLog}
-                editorWarning={editorWarning}
-                setEditorWarning={setEditorWarning}
-                setCommand={setCommand}
+                formCommandEditorValue={formCommandEditorValue}
+                setFormCommandEditorValue={setFormCommandEditorValue}
               />
             </div>
 
-            <div
-              style={{
-                width: "35%",
-              }}
-            >
-              <FilesUpload setCommands={setCommands} />
+            {/* File Upload + Saved Commands */}
+            <div style={{ width: "35%" }}>
+              <FilesUpload
+                setCommands={(cmds) => updateForm("commands", cmds)}
+              />
               <ExportCommands commands={commands} />
               <SavedCommands
                 commands={commands}
-                setEditName={setEditName}
-                setEditHex={setEditHex}
-                setEditIndex={setEditIndex}
-                setCommand={setCommand}
+                setEditName={(val) => updateForm("editName", val)}
+                setEditHex={(val) => updateForm("editHex", val)}
+                setEditIndex={(val) => updateForm("editIndex", val)}
+                setCommand={(val) => updateForm("command", val)}
               />
             </div>
           </div>
 
+          {/* Right side: Send Command + Logs */}
           <div
             style={{
               flex: 1,
@@ -140,17 +145,20 @@ export default function SerialControlPage() {
               width: "70%",
             }}
           >
-            <div style={{height: "15%"}}>
+            {/* Send Command Panel */}
+            <div style={{ height: "15%" }}>
               <SendCommandPanel
                 command={command}
-                setCommand={setCommand}
+                setCommand={(val) => updateForm("command", val)}
                 selectedPort={selectedPort}
                 selectedBaudrate={selectedBaudrate}
                 appendLog={appendLog}
               />
             </div>
-            <div style={{height: "85%"}}>
-              <LogsPanel logs={logs} logEndRef={logEndRef} />
+
+            {/* Logs */}
+            <div style={{ height: "85%" }}>
+              <LogsPanel logs={logs} setLogs={setLogs} logEndRef={logEndRef} />
             </div>
           </div>
         </div>
