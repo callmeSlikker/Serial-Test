@@ -6,6 +6,7 @@ import SendCommandPanel from "../components/SendCommandPanel";
 import LogsPanel from "../components/LogsPanel";
 import FilesUpload from "../components/FilesUpload";
 import ExportCommands from "../components/ExportCommand";
+import ExpectedMode from "../components/ExpectedMode";
 
 export default function SerialControlPage() {
   const [ports, setPorts] = useState([]);
@@ -63,6 +64,8 @@ export default function SerialControlPage() {
         >
           Serial Web Control
         </h2>
+
+        {/* <ExpectedMode onCheck={appendLog} /> */}
 
         <ConnectionSettings
           ports={ports}
