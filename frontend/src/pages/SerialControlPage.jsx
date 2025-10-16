@@ -19,9 +19,9 @@ export default function SerialControlPage() {
   const [editName, setEditName] = useState("");
   const [editHex, setEditHex] = useState("");
   const [editorWarning, setEditorWarning] = useState("");
-  const [transactionCode, setTransactionCode] = useState("");
+  const [transactionCode, setTransactionCode] = useState("56");
   const [fields, setFields] = useState([
-    { id: Date.now(), bit: "", value: "" },
+    { id: Date.now(), bit: "40", value: "000000000100" },
   ]);
   const logEndRef = useRef(null);
   const appendLog = (msg) => setLogs((prev) => [...prev, msg]);
@@ -150,7 +150,7 @@ export default function SerialControlPage() {
               />
             </div>
             <div style={{height: "85%"}}>
-              <LogsPanel logs={logs} logEndRef={logEndRef} />
+              <LogsPanel logs={logs} setLogs={setLogs} logEndRef={logEndRef} />
             </div>
           </div>
         </div>
