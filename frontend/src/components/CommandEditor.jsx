@@ -1,6 +1,10 @@
 import { HypercomMessageHelper } from "../utils/HypercomMessageHelper";
 
-export default function CommandEditor({ formCommandEditorValue, setFormCommandEditorValue }) {
+export default function CommandEditor({
+  formCommandEditorValue,
+  setFormCommandEditorValue,
+  onDeleteCommand,
+}) {
   const {
     commands,
     editIndex,
@@ -38,14 +42,55 @@ export default function CommandEditor({ formCommandEditorValue, setFormCommandEd
     );
   };
 
-  const handleBuild = () => {
+  // const handleBuild = () => {
+  //   const msgFields = {};
+  //   fields.forEach((f) => {
+  //     if (f.bit.trim() && f.value.trim()) msgFields[f.bit] = f.value;
+  //   });
+
+  //   if (Object.keys(msgFields).length === 0) {
+  //     updateForm(
+  //       "editorWarning",
+  //       "! Please enter at least one Bit/Value to build."
+  //     );
+  //     return;
+  //   }
+
+  //   const msg = {
+  //     header: header || "600000000010",
+  //     transactionCode: transactionCode || "00",
+  //     responseCode: responseCode || "00",
+  //     moreIndicator: moreIndicator || "0",
+  //     fields: msgFields,
+  //   };
+
+  //   try {
+  //     const buf = HypercomMessageHelper.build(msg);
+  //     const hexStr =
+  //       buf
+  //         .toString("hex")
+  //         .toUpperCase()
+  //         .match(/.{1,2}/g)
+  //         ?.join(" ") || "";
+  //     updateForm("editHex", hexStr);
+  //     updateForm("command", hexStr);
+  //     updateForm("editorWarning", "");
+  //   } catch (err) {
+  //     updateForm("editorWarning", `Error building message: ${err.message}`);
+  //   }
+  // };
+
+  const handleSave = () => {
     const msgFields = {};
     fields.forEach((f) => {
       if (f.bit.trim() && f.value.trim()) msgFields[f.bit] = f.value;
     });
 
     if (Object.keys(msgFields).length === 0) {
-      updateForm("editorWarning", "! Please enter at least one Bit/Value to build.");
+      updateForm(
+        "editorWarning",
+        "! Please enter at least one Bit/Value to build."
+      );
       return;
     }
 
@@ -71,9 +116,7 @@ export default function CommandEditor({ formCommandEditorValue, setFormCommandEd
     } catch (err) {
       updateForm("editorWarning", `Error building message: ${err.message}`);
     }
-  };
 
-  const handleSave = () => {
     if (!editName.trim() || !editHex.trim()) {
       if (!editorWarning)
         updateForm(
@@ -92,8 +135,11 @@ export default function CommandEditor({ formCommandEditorValue, setFormCommandEd
 
     updateForm("commands", updated);
     updateForm("editIndex", null);
-    updateForm("editName", "");
-    updateForm("editHex", "");
+    updateForm("editName", "Sale 56 1.00 THB");
+    updateForm(
+      "editHex",
+      "02 00 35 36 30 30 30 30 30 30 30 30 30 31 30 35 36 30 30 30 1C 34 30 00 12 30 30 30 30 30 30 30 30 30 31 30 30 1C 03 15"
+    );
     updateForm("editorWarning", "");
   };
 
@@ -102,11 +148,24 @@ export default function CommandEditor({ formCommandEditorValue, setFormCommandEd
       ...prev,
       editIndex: null,
       editName: "",
-      editHex: "",
+      editHex:
+        "02 00 35 36 30 30 30 30 30 30 30 30 30 31 30 35 36 30 30 30 1C 34 30 00 12 30 30 30 30 30 30 30 30 30 31 30 30 1C 03 15",
       editorWarning: "",
-      transactionCode: "",
-      fields: [{ id: Date.now(), bit: "", value: "" }],
+      transactionCode: "56",
+      fields: [{ id: Date.now(), bit: "40", value: "000000000100" }],
     }));
+  };
+
+  // Delete Command
+  const handleDelete = () => {
+    if (editIndex === null) {
+      updateForm("editorWarning", "! Please select a command to delete.");
+      return;
+    }
+
+    if (window.confirm(`Delete "${editName}" ?`)) {
+      onDeleteCommand(editIndex); // 💥 ลบออกจาก Saved Commands + UI ทันที
+    }
   };
 
   // --- UI ---
@@ -121,7 +180,7 @@ export default function CommandEditor({ formCommandEditorValue, setFormCommandEd
         <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>Name :</p>
         <input
           type="text"
-          placeholder="Sale 56 1.00 Bth"
+          placeholder="Sale 56 1.00 THB"
           value={editName}
           onChange={(e) => updateForm("editName", e.target.value)}
           style={{ width: "100%", marginBottom: "8px", padding: "6px" }}
@@ -129,8 +188,14 @@ export default function CommandEditor({ formCommandEditorValue, setFormCommandEd
       </div>
 
       {/* HEX Command */}
-      <div>
-        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>HEX Command :</p>
+      <div
+        style={{
+          display: "none",
+        }}
+      >
+        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>
+          HEX Command :
+        </p>
         <input
           type="text"
           placeholder="02 00 35 36 ..."
@@ -141,8 +206,14 @@ export default function CommandEditor({ formCommandEditorValue, setFormCommandEd
       </div>
 
       {/* Header */}
-      <div>
-        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>Header :</p>
+      <div
+        style={{
+          display: "none",
+        }}
+      >
+        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>
+          Header :
+        </p>
         <input
           type="text"
           placeholder="600000000010"
@@ -154,7 +225,9 @@ export default function CommandEditor({ formCommandEditorValue, setFormCommandEd
 
       {/* Transaction Code */}
       <div>
-        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>Transaction Code :</p>
+        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>
+          Transaction Code :
+        </p>
         <input
           type="text"
           placeholder="20"
@@ -165,8 +238,14 @@ export default function CommandEditor({ formCommandEditorValue, setFormCommandEd
       </div>
 
       {/* Response Code */}
-      <div>
-        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>Response Code :</p>
+      <div
+        style={{
+          display: "none",
+        }}
+      >
+        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>
+          Response Code :
+        </p>
         <input
           type="text"
           placeholder="00"
@@ -177,8 +256,14 @@ export default function CommandEditor({ formCommandEditorValue, setFormCommandEd
       </div>
 
       {/* More Indicator */}
-      <div>
-        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>More Indicator :</p>
+      <div
+        style={{
+          display: "none",
+        }}
+      >
+        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>
+          More Indicator :
+        </p>
         <input
           type="text"
           placeholder="0"
@@ -258,7 +343,7 @@ export default function CommandEditor({ formCommandEditorValue, setFormCommandEd
 
       {/* Buttons */}
       <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
-        <button
+        {/* <button
           onClick={handleBuild}
           style={{
             flex: 1,
@@ -269,7 +354,7 @@ export default function CommandEditor({ formCommandEditorValue, setFormCommandEd
           }}
         >
           Build
-        </button>
+        </button> */}
 
         <button
           onClick={handleSave}
@@ -289,12 +374,25 @@ export default function CommandEditor({ formCommandEditorValue, setFormCommandEd
           style={{
             flex: 1,
             padding: "6px",
-            background: "#f7d4d4",
+            background: "#f7efd4ff",
             border: "none",
             borderRadius: "5px",
           }}
         >
           Clear
+        </button>
+
+        <button
+          onClick={handleDelete}
+          style={{
+            flex: 1,
+            padding: "6px",
+            background: "#f7d4d4",
+            border: "none",
+            borderRadius: "5px",
+          }}
+        >
+          Delete
         </button>
       </div>
     </div>

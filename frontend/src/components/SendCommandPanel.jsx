@@ -67,7 +67,7 @@ export default function SendCommandPanel({
         <textarea
           value={command}
           onChange={(e) => setCommand(e.target.value)}
-          placeholder="02 00 35 36 30 30 30 ..."
+          placeholder="02 00 35 36 30 30 30 30 30 30 30 30 30 31 30 35 36 30 30 30 1C 34 30 00 12 30 30 30 30 30 30 30 30 30 31 30 30 1C 03 15"
           style={{
 
             height: "100%",
