@@ -83,97 +83,85 @@ export default function LogsPanel({ logs, setLogs, logEndRef }) {
   };
 
   const renderLogs = () => {
-    if (!logs || logs.length === 0) return null;
+    if (!logs?.length) return null;
 
-    const commandName = logs.length > 0 ? logs[0].commandName : "Sale 56 1.00 THB";
+    const MAX_WIDTH = 100;
+    const BORDER_STAR = '*'.repeat(MAX_WIDTH);
+    const BORDER_DASH = '-'.repeat(MAX_WIDTH);
 
-    // helper แปลง hex → text
+    // Helper: convert hex → text
     const parseHexLine = (hexLine) => {
       try {
-        if (!hexLine) return "";
-        return parseMessage(hexLine);
+        return hexLine ? parseMessage(hexLine) : "";
       } catch {
         return hexLine;
       }
     };
 
+    // Helper: build top border with ****${commandName}**** centered
+    const commandLine = (commandName) => {
+      if (commandName.length >= MAX_WIDTH) return commandName;
+      const left = commandName ? Math.floor((MAX_WIDTH - commandName.length) / 2) : Math.floor(MAX_WIDTH / 2);
+      const right = commandName ? MAX_WIDTH - left - commandName.length : Math.floor(MAX_WIDTH / 2);
+      return '*'.repeat(left) + commandName + '*'.repeat(right);
+    };
+
+    // Helper: wrap log block with borders (top includes command name)
+    const wrapBlock = (responseDetails, commandName) => [
+      commandLine(commandName),
+      BORDER_DASH,
+      responseDetails,
+      BORDER_DASH,
+      BORDER_STAR,
+    ].join('\n');
+
+    const hexContentCompnent = (
+      <pre style={preStyle}>
+        {logs
+          .map((log) => wrapBlock(log.text, log.commandName))
+          .join('\n')}
+        <div ref={logEndRef} />
+      </pre>
+    )
+
+    // --- Mode: HEX ---
     if (viewMode === "hex") {
-      // HEX mode
-      const hexLog = [
-        "*********************************************************************************************************",
-        commandName,
-        "-----------------------------------------------------------------------------------------------------------",
-        ...logs.map((l) => (typeof l === "string" ? l : l.raw || "")),
-        "---------------------------------------------------------------------------------------------------",
-        "*********************************************************************************************************",
-      ].join("\n");
-
-      return (
-        <pre style={preStyle}>
-          {hexLog}
-          <div ref={logEndRef} />
-        </pre>
-      );
+      return hexContentCompnent;
     }
 
+    const textContentComponent = (
+      <pre style={preStyle}>
+        {logs
+          .map((log) => {
+            const lines = log.text.split("\n").map((line) => {
+              if (line.includes("Sent:")) {
+                const [prefix, hex] = line.split("Sent:");
+                return `${prefix}${log.commandName} Sent:\n\n${parseHexLine(hex.trim())}\n`;
+              } else if (line.includes("Response:")) {
+                const [prefix, hex] = line.split("Response:");
+                return `${prefix}${log.commandName} Response:\n\n${parseHexLine(hex.trim())}\n`;
+              }
+              return line;
+            });
+            return wrapBlock(lines.join("\n"), log.commandName);
+          })
+          .join('\n')}
+        <div ref={logEndRef} />
+      </pre>
+    )
+
+    // --- Mode: TEXT ---
     if (viewMode === "text") {
-      // TEXT mode
-      const textLog = [
-        "*********************************************************************************************************",
-        commandName,
-        "-----------------------------------------------------------------------------------------------------------",
-        ...logs.map((line) => {
-          if (line.includes("Sent:")) {
-            const hex = line.split("Sent:")[1].trim();
-            return `${line.split("Sent:")[0]}Sent:\n\n${parseHexLine(hex)}\n`;
-          } else if (line.includes("Response:")) {
-            const hex = line.split("Response:")[1].trim();
-            return `${line.split("Response:")[0]}Response:\n\n${parseHexLine(hex)}\n`;
-          }
-          return line;
-        }),
-        "---------------------------------------------------------------------------------------------------",
-        "*********************************************************************************************************",
-      ].join("\n");
-
-      return (
-        <pre style={preStyle}>
-          {textLog}
-          <div ref={logEndRef} />
-        </pre>
-      );
+      return textContentComponent;
     }
-
-    // BOTH mode
-    const hexLines = logs.map((l) => (typeof l === "string" ? l : l.raw || ""));
-    const textLines = logs.map((line) => {
-      if (line.includes("Sent:")) {
-        const hex = line.split("Sent:")[1].trim();
-        return parseHexLine(hex);
-      } else if (line.includes("Response:")) {
-        const hex = line.split("Response:")[1].trim();
-        return parseHexLine(hex);
-      }
-      return line;
-    });
 
     return (
       <div style={{ display: "flex", gap: "10px" }}>
         <pre style={{ ...preStyle, width: "50%" }}>
-          {"*********************************************************************************************************\n" +
-            commandName +
-            "\n-----------------------------------------------------------------------------------------------------------\n" +
-            hexLines.join("\n") +
-            "\n---------------------------------------------------------------------------------------------------\n*********************************************************************************************************"}
+          {hexContentCompnent}
           <div ref={logEndRef} />
         </pre>
-        <pre style={{ ...preStyle, width: "50%" }}>
-          {"*********************************************************************************************************\n" +
-            commandName +
-            "\n-----------------------------------------------------------------------------------------------------------\n" +
-            textLines.join("\n") +
-            "\n---------------------------------------------------------------------------------------------------\n*********************************************************************************************************"}
-        </pre>
+        <pre style={{ ...preStyle, width: "50%" }}>{textContentComponent}</pre>
       </div>
     );
   };
@@ -189,6 +177,9 @@ export default function LogsPanel({ logs, setLogs, logEndRef }) {
     whiteSpace: "pre-wrap",
     wordWrap: "break-word",
     overflowX: "hidden",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
   };
 
 

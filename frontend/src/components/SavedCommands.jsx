@@ -32,7 +32,6 @@ export default function SavedCommands({
               setEditIndex(idx);
               setEditName(cmd.name);
               setEditHex(cmd.hex);
-              sendCommand(cmd.hex, cmd.name);
             }}
           >
             {cmd.name}

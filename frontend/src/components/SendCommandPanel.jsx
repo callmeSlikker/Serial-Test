@@ -7,11 +7,14 @@ export default function SendCommandPanel({
   selectedPort,
   selectedBaudrate,
   appendLog,
+  selectedCommandName,
 }) {
+
+  console.log("selectedCommandName", selectedCommandName)
 
 const sendCommand = async (hexCommand) => {
   if (!hexCommand) {
-    appendLog("Please enter a command before sending.");
+    appendLog({ text: "Please enter a command before sending.", commandName: selectedCommandName });
     return;
   }
 
@@ -23,21 +26,23 @@ const sendCommand = async (hexCommand) => {
         port: selectedPort,
         baudrate: parseInt(selectedBaudrate),
         command: hexCommand,
-        name: "Sale 56 1.00 THB", // ✅ ใส่ชื่อคำสั่งไว้ด้วย (หรือดึงจาก state ก็ได้)
+        name: selectedCommandName, // ✅ ใส่ชื่อคำสั่งไว้ด้วย (หรือดึงจาก state ก็ได้)
       }),
     });
 
     const data = await res.json();
 
+    console.log('data', data)
+
     // ✅ แสดง log แบบจัดรูปที่ได้จาก backend
     if (data.log) {
-      appendLog(data.log);
+      appendLog({ text: data.log, commandName: selectedCommandName }); // ✅ เก็บชื่อ command
     } else {
-      appendLog("No log returned");
+      appendLog({ text: "No log returned", commandName: selectedCommandName });
     }
 
   } catch (err) {
-    appendLog("Send command error: " + err.message);
+    appendLog({ text: "Send command error: " + err.message, commandName: selectedCommandName });
   }
 };
 

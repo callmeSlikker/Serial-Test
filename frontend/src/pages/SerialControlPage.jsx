@@ -32,12 +32,29 @@ export default function SerialControlPage() {
 
   const logEndRef = useRef(null);
 
-  const appendLog = (msg) => setLogs((prev) => [...prev, msg]);
+  const appendLog = (msg) => setLogs((prev) => {
+    const findIndex = prev.findIndex((l) => l.commandName === msg.commandName);
+
+    if (findIndex !== -1) {
+      // Update the existing log by appending new text
+      const updated = [...prev];
+      updated[findIndex] = {
+        ...updated[findIndex],
+        text: `${updated[findIndex].text}\n\n${msg.text}` // append new text
+      };
+      return updated;
+    }
+
+    // If not found, just add the new log
+    return [...prev, msg];
+  });
 
   // helper to update formCommandEditorValue easily
   const updateForm = (key, value) => {
     setFormCommandEditorValue((prev) => ({ ...prev, [key]: value }));
   };
+
+  console.log("logs", logs)
 
   // fetch COM ports
   useEffect(() => {
@@ -50,11 +67,13 @@ export default function SerialControlPage() {
           updateForm("selectedPort", data.ports[0]);
         }
       } catch (err) {
-        appendLog("Error loading ports: " + err.message);
+        appendLog({ text: "Error loading ports: " + err.message });
       }
     }
     fetchPorts();
   }, []);
+
+  console.log('logs', logs)
 
   // auto-scroll logs
   useEffect(() => {
@@ -68,6 +87,8 @@ export default function SerialControlPage() {
     selectedBaudrate,
     commands,
     command,
+    editIndex,
+    editName,
   } = formCommandEditorValue;
 
   // delete command by index
@@ -79,30 +100,11 @@ export default function SerialControlPage() {
       editName: "",
       editHex: "",
       editorWarning: "",
-      fields: [{ id: Date.now(), bit: "", value: "" }],onDeleteCommand,
+      fields: [{ id: Date.now(), bit: "", value: "" }], onDeleteCommand,
     }));
   };
 
-  const sendCommand = async (hexCommand, name) => {
-  if (!hexCommand) return;
-
-  try {
-    const res = await fetch("http://localhost:5000/sendCommand", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ port: selectedPort, baudrate: parseInt(selectedBaudrate), command: hexCommand, name }),
-    });
-    const data = await res.json();
-
-    if (data.log) {
-      appendLog({ text: data.log, commandName: name }); // ✅ เก็บชื่อ command
-    } else {
-      appendLog({ text: "No log returned", commandName: name });
-    }
-  } catch (err) {
-    appendLog({ text: "Send command error: " + err.message, commandName: name });
-  }
-};
+  console.log("editIndex", editIndex, commands)
 
   return (
     <div>
@@ -190,9 +192,10 @@ export default function SerialControlPage() {
                 selectedPort={selectedPort}
                 selectedBaudrate={selectedBaudrate}
                 appendLog={appendLog}
+                selectedCommandName={editIndex ? commands[editIndex]?.name || "" : editName}
               />
             </div>
-            <div style={{height: "85%"}}>
+            <div style={{ height: "85%" }}>
               <LogsPanel logs={logs} setLogs={setLogs} logEndRef={logEndRef} />
             </div>
           </div>
