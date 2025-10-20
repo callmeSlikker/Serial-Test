@@ -171,9 +171,7 @@ export default function SerialControlPage() {
                 appendLog={appendLog}
               />
             </div>
-
-            {/* Logs */}
-            <div style={{ height: "85%" }}>
+            <div style={{height: "85%"}}>
               <LogsPanel logs={logs} setLogs={setLogs} logEndRef={logEndRef} />
             </div>
           </div>
