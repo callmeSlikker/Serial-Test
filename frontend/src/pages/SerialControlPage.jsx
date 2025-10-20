@@ -15,19 +15,17 @@ export default function SerialControlPage() {
     baudrates: [9600, 19200, 38400, 57600, 115200],
     selectedPort: "",
     selectedBaudrate: "",
-    command:
-      "02 00 35 36 30 30 30 30 30 30 30 30 30 31 30 35 36 30 30 30 1C 34 30 00 12 30 30 30 30 30 30 30 30 30 31 30 30 1C 03 15",
+    command: "",
     commands: [],
     editIndex: null,
-    editName: "Sale 56 1.00 THB",
-    editHex:
-      "02 00 35 36 30 30 30 30 30 30 30 30 30 31 30 35 36 30 30 30 1C 34 30 00 12 30 30 30 30 30 30 30 30 30 31 30 30 1C 03 15",
+    editName: "",
+    editHex: "",
     editorWarning: "",
     transactionCode: "56",
     header: "600000000010",
     responseCode: "00",
     moreIndicator: "0",
-    fields: [{ id: Date.now(), bit: "40", value: "000000000100" }],
+    fields: [{ id: Date.now(), bit: "", value: "" }],
   });
 
   const logEndRef = useRef(null);
@@ -70,7 +68,6 @@ export default function SerialControlPage() {
     command,
   } = formCommandEditorValue;
 
-  // delete command by index
   const handleDeleteCommand = (index) => {
     setFormCommandEditorValue((prev) => ({
       ...prev,
@@ -79,7 +76,7 @@ export default function SerialControlPage() {
       editName: "",
       editHex: "",
       editorWarning: "",
-      fields: [{ id: Date.now(), bit: "", value: "" }],onDeleteCommand,
+      fields: [{ id: Date.now(), bit: "", value: "" }],
     }));
   };
 
@@ -131,7 +128,7 @@ export default function SerialControlPage() {
               <CommandEditor
                 formCommandEditorValue={formCommandEditorValue}
                 setFormCommandEditorValue={setFormCommandEditorValue}
-                onDeleteCommand={handleDeleteCommand}
+                handleDeleteCommand={handleDeleteCommand}
               />
             </div>
 
@@ -171,7 +168,9 @@ export default function SerialControlPage() {
                 appendLog={appendLog}
               />
             </div>
-            <div style={{height: "85%"}}>
+
+            {/* Logs */}
+            <div style={{ height: "85%" }}>
               <LogsPanel logs={logs} setLogs={setLogs} logEndRef={logEndRef} />
             </div>
           </div>

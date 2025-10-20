@@ -172,7 +172,7 @@ export default function LogsPanel({ logs, setLogs, logEndRef }) {
       </div>
       <div>
         <button
-          onClick={() => setLogs([])} // ล้าง logs
+          onClick={() => setLogs([])}
           style={{
             flex: 1,
             padding: "1px",

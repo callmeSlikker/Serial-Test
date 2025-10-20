@@ -1,10 +1,6 @@
 import { HypercomMessageHelper } from "../utils/HypercomMessageHelper";
 
-export default function CommandEditor({
-  formCommandEditorValue,
-  setFormCommandEditorValue,
-  onDeleteCommand,
-}) {
+export default function CommandEditor({ formCommandEditorValue, setFormCommandEditorValue, handleDeleteCommand }) {
   const {
     commands,
     editIndex,
@@ -80,6 +76,7 @@ export default function CommandEditor({
   //   }
   // };
 
+  
   const handleSave = () => {
     const msgFields = {};
     fields.forEach((f) => {
@@ -87,10 +84,7 @@ export default function CommandEditor({
     });
 
     if (Object.keys(msgFields).length === 0) {
-      updateForm(
-        "editorWarning",
-        "! Please enter at least one Bit/Value to build."
-      );
+      updateForm("editorWarning", "! Please enter at least one Bit/Value to build.");
       return;
     }
 
@@ -116,56 +110,42 @@ export default function CommandEditor({
     } catch (err) {
       updateForm("editorWarning", `Error building message: ${err.message}`);
     }
-
-    if (!editName.trim() || !editHex.trim()) {
-      if (!editorWarning)
-        updateForm(
-          "editorWarning",
-          "! Please enter name and HEX command before saving."
-        );
-      return;
-    }
-
-    const updated = [...commands];
-    if (editIndex !== null) {
-      updated[editIndex] = { name: editName, hex: editHex };
-    } else {
-      updated.push({ name: editName, hex: editHex });
-    }
-
-    updateForm("commands", updated);
-    updateForm("editIndex", null);
-    updateForm("editName", "Sale 56 1.00 THB");
-    updateForm(
-      "editHex",
-      "02 00 35 36 30 30 30 30 30 30 30 30 30 31 30 35 36 30 30 30 1C 34 30 00 12 30 30 30 30 30 30 30 30 30 31 30 30 1C 03 15"
-    );
-    updateForm("editorWarning", "");
   };
+
+  // const handleSave = () => {
+  //   if (!editName.trim() || !editHex.trim()) {
+  //     if (!editorWarning)
+  //       updateForm(
+  //         "editorWarning",
+  //         "! Please enter name and HEX command before saving."
+  //       );
+  //     return;
+  //   }
+
+  //   const updated = [...commands];
+  //   if (editIndex !== null) {
+  //     updated[editIndex] = { name: editName, hex: editHex };
+  //   } else {
+  //     updated.push({ name: editName, hex: editHex });
+  //   }
+
+  //   updateForm("commands", updated);
+  //   updateForm("editIndex", null);
+  //   updateForm("editName", "");
+  //   updateForm("editHex", "");
+  //   updateForm("editorWarning", "");
+  // };
 
   const handleClear = () => {
     setFormCommandEditorValue((prev) => ({
       ...prev,
       editIndex: null,
       editName: "",
-      editHex:
-        "02 00 35 36 30 30 30 30 30 30 30 30 30 31 30 35 36 30 30 30 1C 34 30 00 12 30 30 30 30 30 30 30 30 30 31 30 30 1C 03 15",
+      editHex: "",
       editorWarning: "",
-      transactionCode: "56",
-      fields: [{ id: Date.now(), bit: "40", value: "000000000100" }],
+      transactionCode: "",
+      fields: [{ id: Date.now(), bit: "", value: "" }],
     }));
-  };
-
-  // Delete Command
-  const handleDelete = () => {
-    if (editIndex === null) {
-      updateForm("editorWarning", "! Please select a command to delete.");
-      return;
-    }
-
-    if (window.confirm(`Delete "${editName}" ?`)) {
-      onDeleteCommand(editIndex); // 💥 ลบออกจาก Saved Commands + UI ทันที
-    }
   };
 
   // --- UI ---
@@ -188,14 +168,8 @@ export default function CommandEditor({
       </div>
 
       {/* HEX Command */}
-      <div
-        style={{
-          display: "none",
-        }}
-      >
-        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>
-          HEX Command :
-        </p>
+      <div>
+        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>HEX Command :</p>
         <input
           type="text"
           placeholder="02 00 35 36 ..."
@@ -206,14 +180,8 @@ export default function CommandEditor({
       </div>
 
       {/* Header */}
-      <div
-        style={{
-          display: "none",
-        }}
-      >
-        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>
-          Header :
-        </p>
+      <div>
+        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>Header :</p>
         <input
           type="text"
           placeholder="600000000010"
@@ -225,9 +193,7 @@ export default function CommandEditor({
 
       {/* Transaction Code */}
       <div>
-        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>
-          Transaction Code :
-        </p>
+        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>Transaction Code :</p>
         <input
           type="text"
           placeholder="20"
@@ -238,14 +204,8 @@ export default function CommandEditor({
       </div>
 
       {/* Response Code */}
-      <div
-        style={{
-          display: "none",
-        }}
-      >
-        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>
-          Response Code :
-        </p>
+      <div>
+        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>Response Code :</p>
         <input
           type="text"
           placeholder="00"
@@ -256,14 +216,8 @@ export default function CommandEditor({
       </div>
 
       {/* More Indicator */}
-      <div
-        style={{
-          display: "none",
-        }}
-      >
-        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>
-          More Indicator :
-        </p>
+      <div>
+        <p style={{ fontSize: "14px", fontWeight: "500", margin: 0 }}>More Indicator :</p>
         <input
           type="text"
           placeholder="0"
@@ -370,20 +324,7 @@ export default function CommandEditor({
         </button>
 
         <button
-          onClick={handleClear}
-          style={{
-            flex: 1,
-            padding: "6px",
-            background: "#f7efd4ff",
-            border: "none",
-            borderRadius: "5px",
-          }}
-        >
-          Clear
-        </button>
-
-        <button
-          onClick={handleDelete}
+          onClick={() => handleDeleteCommand(editIndex)}
           style={{
             flex: 1,
             padding: "6px",
