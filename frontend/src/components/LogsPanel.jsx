@@ -82,57 +82,97 @@ export default function LogsPanel({ logs, setLogs, logEndRef }) {
     }
   };
 
-
   const renderLogs = () => {
+    if (!logs || logs.length === 0) return null;
+
+    const commandName = logs.length > 0 ? logs[0].commandName : "Sale 56 1.00 THB";
+
+    // helper แปลง hex → text
+    const parseHexLine = (hexLine) => {
+      try {
+        if (!hexLine) return "";
+        return parseMessage(hexLine);
+      } catch {
+        return hexLine;
+      }
+    };
+
     if (viewMode === "hex") {
+      // HEX mode
+      const hexLog = [
+        "*********************************************************************************************************",
+        commandName,
+        "-----------------------------------------------------------------------------------------------------------",
+        ...logs.map((l) => (typeof l === "string" ? l : l.raw || "")),
+        "---------------------------------------------------------------------------------------------------",
+        "*********************************************************************************************************",
+      ].join("\n");
+
       return (
         <pre style={preStyle}>
-          {logs.join("\n")}
+          {hexLog}
           <div ref={logEndRef} />
         </pre>
       );
     }
 
     if (viewMode === "text") {
+      // TEXT mode
+      const textLog = [
+        "*********************************************************************************************************",
+        commandName,
+        "-----------------------------------------------------------------------------------------------------------",
+        ...logs.map((line) => {
+          if (line.includes("Sent:")) {
+            const hex = line.split("Sent:")[1].trim();
+            return `${line.split("Sent:")[0]}Sent:\n\n${parseHexLine(hex)}\n`;
+          } else if (line.includes("Response:")) {
+            const hex = line.split("Response:")[1].trim();
+            return `${line.split("Response:")[0]}Response:\n\n${parseHexLine(hex)}\n`;
+          }
+          return line;
+        }),
+        "---------------------------------------------------------------------------------------------------",
+        "*********************************************************************************************************",
+      ].join("\n");
+
       return (
         <pre style={preStyle}>
-          {logs
-            .map((line) => {
-              if (line.includes("Sent:")) {
-                const hex = line.split("Sent:")[1].trim();
-                return `${line.split("Sent:")[0]}Sent:\n\n${parseMessage(hex)}\n`;
-              } else if (line.includes("Response:")) {
-                const hex = line.split("Response:")[1].trim();
-                return `${line.split("Response:")[0]}Response:\n\n${parseMessage(hex)}\n`;
-              }
-              return line;
-            })
-            .join("\n")}
-          <div ref={logEndRef} /> 
+          {textLog}
+          <div ref={logEndRef} />
         </pre>
       );
     }
 
-    // both mode (hex + text)
+    // BOTH mode
+    const hexLines = logs.map((l) => (typeof l === "string" ? l : l.raw || ""));
+    const textLines = logs.map((line) => {
+      if (line.includes("Sent:")) {
+        const hex = line.split("Sent:")[1].trim();
+        return parseHexLine(hex);
+      } else if (line.includes("Response:")) {
+        const hex = line.split("Response:")[1].trim();
+        return parseHexLine(hex);
+      }
+      return line;
+    });
+
     return (
       <div style={{ display: "flex", gap: "10px" }}>
         <pre style={{ ...preStyle, width: "50%" }}>
-          {logs.join("\n")}
+          {"*********************************************************************************************************\n" +
+            commandName +
+            "\n-----------------------------------------------------------------------------------------------------------\n" +
+            hexLines.join("\n") +
+            "\n---------------------------------------------------------------------------------------------------\n*********************************************************************************************************"}
           <div ref={logEndRef} />
         </pre>
         <pre style={{ ...preStyle, width: "50%" }}>
-          {logs
-            .map((line) => {
-              if (line.includes("Sent:")) {
-                const hex = line.split("Sent:")[1].trim();
-                return `${parseMessage(hex)}\n`;
-              } else if (line.includes("Response:")) {
-                const hex = line.split("Response:")[1].trim();
-                return `${parseMessage(hex)}\n`;
-              }
-              return line;
-            })
-            .join("\n")}
+          {"*********************************************************************************************************\n" +
+            commandName +
+            "\n-----------------------------------------------------------------------------------------------------------\n" +
+            textLines.join("\n") +
+            "\n---------------------------------------------------------------------------------------------------\n*********************************************************************************************************"}
         </pre>
       </div>
     );
@@ -150,6 +190,7 @@ export default function LogsPanel({ logs, setLogs, logEndRef }) {
     wordWrap: "break-word",
     overflowX: "hidden",
   };
+
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>

@@ -14,18 +14,20 @@ export default function SerialControlPage() {
     ports: [],
     baudrates: [9600, 19200, 38400, 57600, 115200],
     selectedPort: "",
-    selectedBaudrate: "",
-    command: "",
+    selectedBaudrate: "9600",
+    command:
+      "02 00 35 36 30 30 30 30 30 30 30 30 30 31 30 35 36 30 30 30 1C 34 30 00 12 30 30 30 30 30 30 30 30 30 31 30 30 1C 03 15",
     commands: [],
     editIndex: null,
-    editName: "",
-    editHex: "",
+    editName: "Sale 56 1.00 THB",
+    editHex:
+      "02 00 35 36 30 30 30 30 30 30 30 30 30 31 30 35 36 30 30 30 1C 34 30 00 12 30 30 30 30 30 30 30 30 30 31 30 30 1C 03 15",
     editorWarning: "",
     transactionCode: "56",
     header: "600000000010",
     responseCode: "00",
     moreIndicator: "0",
-    fields: [{ id: Date.now(), bit: "", value: "" }],
+    fields: [{ id: Date.now(), bit: "40", value: "000000000100" }],
   });
 
   const logEndRef = useRef(null);
@@ -68,6 +70,7 @@ export default function SerialControlPage() {
     command,
   } = formCommandEditorValue;
 
+  // delete command by index
   const handleDeleteCommand = (index) => {
     setFormCommandEditorValue((prev) => ({
       ...prev,
@@ -76,9 +79,30 @@ export default function SerialControlPage() {
       editName: "",
       editHex: "",
       editorWarning: "",
-      fields: [{ id: Date.now(), bit: "", value: "" }],
+      fields: [{ id: Date.now(), bit: "", value: "" }],onDeleteCommand,
     }));
   };
+
+  const sendCommand = async (hexCommand, name) => {
+  if (!hexCommand) return;
+
+  try {
+    const res = await fetch("http://localhost:5000/sendCommand", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ port: selectedPort, baudrate: parseInt(selectedBaudrate), command: hexCommand, name }),
+    });
+    const data = await res.json();
+
+    if (data.log) {
+      appendLog({ text: data.log, commandName: name }); // ✅ เก็บชื่อ command
+    } else {
+      appendLog({ text: "No log returned", commandName: name });
+    }
+  } catch (err) {
+    appendLog({ text: "Send command error: " + err.message, commandName: name });
+  }
+};
 
   return (
     <div>
@@ -128,7 +152,7 @@ export default function SerialControlPage() {
               <CommandEditor
                 formCommandEditorValue={formCommandEditorValue}
                 setFormCommandEditorValue={setFormCommandEditorValue}
-                handleDeleteCommand={handleDeleteCommand}
+                onDeleteCommand={handleDeleteCommand}
               />
             </div>
 
@@ -168,9 +192,7 @@ export default function SerialControlPage() {
                 appendLog={appendLog}
               />
             </div>
-
-            {/* Logs */}
-            <div style={{ height: "85%" }}>
+            <div style={{height: "85%"}}>
               <LogsPanel logs={logs} setLogs={setLogs} logEndRef={logEndRef} />
             </div>
           </div>

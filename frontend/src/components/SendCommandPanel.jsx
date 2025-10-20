@@ -9,45 +9,38 @@ export default function SendCommandPanel({
   appendLog,
 }) {
 
-  const sendCommand = async (hexCommand) => {
-    if (!hexCommand) {
-      appendLog("Please enter a command before sending.");
-      return;
+const sendCommand = async (hexCommand) => {
+  if (!hexCommand) {
+    appendLog("Please enter a command before sending.");
+    return;
+  }
+
+  try {
+    const res = await fetch("http://localhost:5000/sendCommand", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        port: selectedPort,
+        baudrate: parseInt(selectedBaudrate),
+        command: hexCommand,
+        name: "Sale 56 1.00 THB", // ✅ ใส่ชื่อคำสั่งไว้ด้วย (หรือดึงจาก state ก็ได้)
+      }),
+    });
+
+    const data = await res.json();
+
+    // ✅ แสดง log แบบจัดรูปที่ได้จาก backend
+    if (data.log) {
+      appendLog(data.log);
+    } else {
+      appendLog("No log returned");
     }
 
-    try {
-      console.log("qweqweqw", {
-          port: selectedPort,
-          baudrate: parseInt(selectedBaudrate),
-          command: hexCommand
-        })
-      const res = await fetch("http://localhost:5000/sendCommand", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          port: selectedPort,
-          baudrate: parseInt(selectedBaudrate),
-          command: hexCommand
-        }),
-      });
+  } catch (err) {
+    appendLog("Send command error: " + err.message);
+  }
+};
 
-      const data = await res.json();
-
-      if (data.responseBytes) {
-        const hexString = MsgUtils.bytesToHexString(data.responseBytes).toUpperCase();
-        appendLog("Response (HEX): " + hexString);
-      }
-
-      if (data.log && Array.isArray(data.log)) {
-        data.log.forEach((line) => appendLog(line));
-      } else {
-        appendLog(data.errormsg || "No log returned");
-      }
-
-    } catch (err) {
-      appendLog("Send command error: " + err.message);
-    }
-  };
 
   return (
     <div>

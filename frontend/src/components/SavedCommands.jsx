@@ -5,7 +5,7 @@ export default function SavedCommands({
   setEditIndex,
   setCommand,
 }) {
-  console.log("commasasdnds", commands)
+  console.log("commands", commands)
   return (
     <div style={{ marginTop: "20px" , overflowY: "scroll", height: "700px" }}>
       <p style={{ fontSize: "16px", fontWeight: "500", margin: 0 }}>Saved Commands:</p>
@@ -32,6 +32,7 @@ export default function SavedCommands({
               setEditIndex(idx);
               setEditName(cmd.name);
               setEditHex(cmd.hex);
+              sendCommand(cmd.hex, cmd.name);
             }}
           >
             {cmd.name}

@@ -1,0 +1,19 @@
+[33m1b8c67c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Update before meeting
+[33mff9e555[m fix issue
+[33m8c6e092[m export command buttom , show text logs correct
+[33ma750fa4[m add new request msg build , new UI and select log display hex text and all.
+[33mc69c017[m remove wrong library in root package.json
+[33m6054f84[m Apply .gitignore rules
+[33m8ca9632[m remove node_modules
+[33m6350cc8[m update input and build msg
+[33m7197730[m fix stupid issue
+[33m7d360da[m update UI
+[33mb170e86[m update be-fe
+[33me934736[m update backend
+[33m98ae965[m update msg loop
+[33m06cfc0f[m loop 06
+[33m034d6f7[m update ui and loop of message
+[33md9c04c3[m save local changes
+[33maf06ce2[m add UI css
+[33m053bb23[m connect and show response
+[33m5c47fcc[m first commit

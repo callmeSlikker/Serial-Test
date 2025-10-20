@@ -105,21 +105,20 @@ def sendCommand():
     port = data.get("port")
     baudrate = int(data.get("baudrate", 9600))
     hex_command = data.get("command", "").replace(" ", "")
+    command_name = data.get("name", "UnknownCommand")  # ✅ เพิ่มรับชื่อคำสั่งมาด้วย
+
     log_messages = []
-    #init Response Message
     resJson["errormsg"] = ""
     resJson["Request"] = ""
     resJson["Response"] = ""
     resJson["log"] = []
 
-
     try:
-        # เปิด serial port
+        # --- เปิด serial ---
         ser = serial.Serial(port, baudrate, timeout=1)
         log_messages.append(f"{timestamp()} - Connected to {port} at {baudrate} bps")
 
-        resJson["errormsg"] = "succuss"
-        # --- ส่ง command ---
+        resJson["errormsg"] = "success"
         resJson["Request"] = hex_command
         command_bytes = bytes.fromhex(hex_command)
         ser.write(command_bytes)
@@ -127,71 +126,56 @@ def sendCommand():
 
         # --- อ่าน ACK ---
         ack = ser.read(1)
-        if ack:
-            hex_ack = binascii.hexlify(ack).decode().upper()
-            if ack == b'\x06':
-                log_messages.append(f"{timestamp()} - Response(ACK): {hex_ack}")
-            else:
-                log_messages.append(f"{timestamp()} - Response(ACK): {hex_ack} invalid")
-                # print(log_messages)
-                return serialError (ser,log_messages,"invalid Message")
-                # ser.close()
-                # # return jsonify({"logs": log_messages}), 400
+        if not ack:
+            return serialError(ser, log_messages, "No ACK received")
+
+        hex_ack = binascii.hexlify(ack).decode().upper()
+        if ack == b'\x06':
+            log_messages.append(f"{timestamp()} - Response(ACK): {hex_ack}")
         else:
-            log_messages.append(f"{timestamp()} - Response(ACK): no ACK (timeout)")
-            # print(log_messages)
-            return serialError (ser,log_messages,"no ACK (timeout)")
-            # ser.close()
-            # # return jsonify({"logs": log_messages}), 400
+            return serialError(ser, log_messages, f"Invalid ACK: {hex_ack}")
 
         # --- อ่าน response เต็มจนเจอ 1C03 ---
         response_bytes = bytearray()
         last_data_time = time.time()
-        max_wait = 60  # วินาที
+        max_wait = 60
 
-        is_end = False
         while True:
             chunk = ser.read(1)
             if chunk:
                 response_bytes.extend(chunk)
-                if is_end:
-                    break
                 last_data_time = time.time()
-                # หยุดเมื่อเจอ 1C03
                 if response_bytes.endswith(b'\x1C\x03'):
-                    is_end = True
-                    # break
-            else:
-                if time.time() - last_data_time > max_wait:
-                    log_messages.append(f"{timestamp()} - Response timeout")
                     break
+            elif time.time() - last_data_time > max_wait:
+                log_messages.append(f"{timestamp()} - Response timeout")
+                break
 
         if response_bytes:
             hex_response = binascii.hexlify(response_bytes).decode().upper()
             log_messages.append(f"{timestamp()} - Response: {hex_response}")
         else:
-            log_messages.append(f"{timestamp()} - Response: !no data")
+            hex_response = ""
+            log_messages.append(f"{timestamp()} - Response: (no data)")
 
         # --- ส่ง ACK กลับไป ---
         ser.write(b'\x06')
         log_messages.append(f"{timestamp()} - ACK sent")
 
-        ser.reset_input_buffer()
-        ser.reset_output_buffer()
         ser.close()
+
+        # ✅ รวมผลลัพธ์ทั้งหมด
+        full_log = f"=== {command_name} ===\n" + "\n".join(log_messages)
         resJson["Response"] = hex_response
-        resJson["log"] = log_messages
-        print(resJson)
+        resJson["log"] = full_log
+
         return jsonify(resJson)
-        # return jsonify({"logs": log_messages})
 
     except Exception as e:
-        log_messages.append(f"{timestamp()} - Error: {str(e)}")
-        print("error"+str(e))
-        resJson["log"] = "".join(log_messages)
         resJson["errormsg"] = str(e)
-        # return jsonify({"logs": log_messages}), 400
+        resJson["log"] = "\n".join(log_messages)
         return jsonify(resJson)
+
     
 
 @app.route("/")

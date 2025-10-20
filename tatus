@@ -1,0 +1,26 @@
+[1mdiff --cc frontend/src/components/LogsPanel.jsx[m
+[1mindex f0738ed,0c08f66..0000000[m
+[1m--- a/frontend/src/components/LogsPanel.jsx[m
+[1m+++ b/frontend/src/components/LogsPanel.jsx[m
+[36m@@@ -172,7 -172,7 +172,11 @@@[m [mexport default function LogsPanel({ log[m
+        </div>[m
+        <div>[m
+          <button[m
+[32m++HEAD[m
+[32m +          onClick={() => setLogs([])} // ล้าง logs[m
+[32m++[m
+[32m+           onClick={() => setLogs([])}[m
+[32m++9bd2749b97b9ecf38158402734f5fec6877edbdc[m
+            style={{[m
+              flex: 1,[m
+              padding: "1px",[m
+[1mdiff --cc frontend/src/pages/SerialControlPage.jsx[m
+[1mindex e4be03c,ca96806..0000000[m
+[1m--- a/frontend/src/pages/SerialControlPage.jsx[m
+[1m+++ b/frontend/src/pages/SerialControlPage.jsx[m
+[36m@@@ -160,4 -181,4 +181,4 @@@[m [mexport default function SerialControlPa[m
+        </div>[m
+      </div>[m
+    );[m
+[31m--}[m
+[32m++}[m
