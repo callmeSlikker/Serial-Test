@@ -42,45 +42,7 @@ export default function CommandEditor({
     );
   };
 
-  // const handleBuild = () => {
-  //   const msgFields = {};
-  //   fields.forEach((f) => {
-  //     if (f.bit.trim() && f.value.trim()) msgFields[f.bit] = f.value;
-  //   });
-
-  //   if (Object.keys(msgFields).length === 0) {
-  //     updateForm(
-  //       "editorWarning",
-  //       "! Please enter at least one Bit/Value to build."
-  //     );
-  //     return;
-  //   }
-
-  //   const msg = {
-  //     header: header || "600000000010",
-  //     transactionCode: transactionCode || "00",
-  //     responseCode: responseCode || "00",
-  //     moreIndicator: moreIndicator || "0",
-  //     fields: msgFields,
-  //   };
-
-  //   try {
-  //     const buf = HypercomMessageHelper.build(msg);
-  //     const hexStr =
-  //       buf
-  //         .toString("hex")
-  //         .toUpperCase()
-  //         .match(/.{1,2}/g)
-  //         ?.join(" ") || "";
-  //     updateForm("editHex", hexStr);
-  //     updateForm("command", hexStr);
-  //     updateForm("editorWarning", "");
-  //   } catch (err) {
-  //     updateForm("editorWarning", `Error building message: ${err.message}`);
-  //   }
-  // };
-
-  const handleSave = () => {
+  const handleBuild = () => {
     const msgFields = {};
     fields.forEach((f) => {
       if (f.bit.trim() && f.value.trim()) msgFields[f.bit] = f.value;
@@ -116,23 +78,65 @@ export default function CommandEditor({
     } catch (err) {
       updateForm("editorWarning", `Error building message: ${err.message}`);
     }
+  };
 
-    if (!editName.trim() || !editHex.trim()) {
-      if (!editorWarning)
-        updateForm(
-          "editorWarning",
-          "! Please enter name and HEX command before saving."
-        );
+  const handleSave = () => {
+    // ✅ Step 1: สร้าง fields จากฟอร์ม
+    const msgFields = {};
+    fields.forEach((f) => {
+      if (f.bit.trim() && f.value.trim()) msgFields[f.bit] = f.value;
+    });
+
+    if (Object.keys(msgFields).length === 0) {
+      updateForm("editorWarning", "! Please enter at least one Bit/Value to build.");
       return;
     }
 
-    const updated = [...commands];
-    if (editIndex !== null) {
-      updated[editIndex] = { name: editName, hex: editHex };
-    } else {
-      updated.push({ name: editName, hex: editHex });
+    // ✅ Step 2: สร้าง message object
+    const msg = {
+      header: header || "600000000010",
+      transactionCode: transactionCode || "00",
+      responseCode: responseCode || "00",
+      moreIndicator: moreIndicator || "0",
+      fields: msgFields,
+    };
+
+    // ✅ Step 3: build message (เหมือน handleBuild)
+    let hexStr = "";
+    try {
+      const buf = HypercomMessageHelper.build(msg);
+      hexStr =
+        buf
+          .toString("hex")
+          .toUpperCase()
+          .match(/.{1,2}/g)
+          ?.join(" ") || "";
+      updateForm("editHex", hexStr);
+      updateForm("command", hexStr);
+      updateForm("editorWarning", "");
+    } catch (err) {
+      updateForm("editorWarning", `Error building message: ${err.message}`);
+      return; // ❗ ถ้า build fail ไม่ต้อง save ต่อ
     }
 
+    // ✅ Step 4: ตรวจเช็คชื่อและ hex ก่อน save
+    const nameToSave = editName.trim();
+    const hexToSave = hexStr.trim() || editHex.trim();
+
+    if (!nameToSave || !hexToSave) {
+      updateForm("editorWarning", "! Please enter name and HEX command before saving.");
+      return;
+    }
+
+    // ✅ Step 5: บันทึก command
+    const updated = [...commands];
+    if (editIndex !== null) {
+      updated[editIndex] = { name: nameToSave, hex: hexToSave };
+    } else {
+      updated.push({ name: nameToSave, hex: hexToSave });
+    }
+
+    // ✅ Step 6: เคลียร์ฟอร์ม
     updateForm("commands", updated);
     updateForm("editIndex", null);
     updateForm("editName", "Sale 56 1.00 THB");
@@ -143,11 +147,12 @@ export default function CommandEditor({
     updateForm("editorWarning", "");
   };
 
+
   const handleClear = () => {
     setFormCommandEditorValue((prev) => ({
       ...prev,
       editIndex: null,
-      editName: "",
+      editName: "Sale 56 1.00 THB",
       editHex:
         "02 00 35 36 30 30 30 30 30 30 30 30 30 31 30 35 36 30 30 30 1C 34 30 00 12 30 30 30 30 30 30 30 30 30 31 30 30 1C 03 15",
       editorWarning: "",

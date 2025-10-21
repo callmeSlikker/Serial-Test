@@ -59,7 +59,6 @@ export default function Page2() {
 
     }
     return msgStr
-
   };
 
   const TestValidateFfield = () => {

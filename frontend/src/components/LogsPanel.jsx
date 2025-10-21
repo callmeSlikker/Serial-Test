@@ -2,6 +2,7 @@ import { useState } from "react";
 import { MsgUtils } from "../utils/MsgUtils";
 import { HypercomMessageHelper } from "../utils/HypercomMessageHelper";
 import { Buffer } from "buffer";
+import { getValidationFields } from "../utils/ResponseValidation";
 
 export default function LogsPanel({ logs, setLogs, logEndRef }) {
   const [viewMode, setViewMode] = useState("hex");
@@ -82,14 +83,59 @@ export default function LogsPanel({ logs, setLogs, logEndRef }) {
     }
   };
 
+  function validateFields(parsedText) {
+    const results = [];
+
+    // --- Extract Trans. Code
+    const transCodeMatch = parsedText.match(/Trans\. Code\s*=\s*\[(\d+)\]/);
+    const transCode = transCodeMatch ? transCodeMatch[1] : null;
+
+    if (!transCode) {
+      results.push("❌ Could not find Trans. Code in response");
+      return results.join("\n");
+    }
+
+    const validationFields = getValidationFields(transCode);
+    if (Object.keys(validationFields).length === 0) {
+      results.push(`ℹ️ No validation rules defined for Trans. Code [${transCode}]`);
+      return results.join("\n");
+    }
+
+    // --- Extract all Field entries
+    const fieldRegex = /Field\s*\[(\w+)\]\s*Len=(\d+)\s*\[(.*?)\]/g;
+    let match;
+    const foundFields = {};
+
+    while ((match = fieldRegex.exec(parsedText)) !== null) {
+      const field = match[1];
+      const len = match[2];
+      const value = match[3];
+      foundFields[field] = { len, value };
+    }
+
+    // --- Compare each expected field
+    Object.entries(validationFields).forEach(([key, expectedLenArray]) => {
+      if (!foundFields[key]) {
+        results.push(`❌ Field [${key}] missing from response`);
+      } else if (!expectedLenArray.includes(foundFields[key].len)) {
+        results.push(
+          `⚠️ Field [${key}] Len mismatch → Expected: ${expectedLenArray}, Got: ${foundFields[key].len}`
+        );
+      } else {
+        results.push(`✅ Field [${key}] OK (Len=${expectedLenArray})`);
+      }
+    });
+
+    return [`Trans. Code [${transCode}]`, ...results].join("\n");
+  }
+
   const renderLogs = () => {
     if (!logs?.length) return null;
 
     const MAX_WIDTH = 100;
-    const BORDER_STAR = '*'.repeat(MAX_WIDTH);
-    const BORDER_DASH = '-'.repeat(MAX_WIDTH);
+    const BORDER_STAR = "*".repeat(MAX_WIDTH);
+    const BORDER_DASH = "-".repeat(MAX_WIDTH);
 
-    // Helper: convert hex → text
     const parseHexLine = (hexLine) => {
       try {
         return hexLine ? parseMessage(hexLine) : "";
@@ -98,35 +144,30 @@ export default function LogsPanel({ logs, setLogs, logEndRef }) {
       }
     };
 
-    // Helper: build top border with ****${commandName}**** centered
     const commandLine = (commandName) => {
       if (commandName.length >= MAX_WIDTH) return commandName;
-      const left = commandName ? Math.floor((MAX_WIDTH - commandName.length) / 2) : Math.floor(MAX_WIDTH / 2);
-      const right = commandName ? MAX_WIDTH - left - commandName.length : Math.floor(MAX_WIDTH / 2);
-      return '*'.repeat(left) + commandName + '*'.repeat(right);
+      const left = commandName
+        ? Math.floor((MAX_WIDTH - commandName.length) / 2)
+        : Math.floor(MAX_WIDTH / 2);
+      const right = commandName
+        ? MAX_WIDTH - left - commandName.length
+        : Math.floor(MAX_WIDTH / 2);
+      return "*".repeat(left) + commandName + "*".repeat(right);
     };
 
-    // Helper: wrap log block with borders (top includes command name)
-    const wrapBlock = (responseDetails, commandName) => [
-      commandLine(commandName),
-      BORDER_DASH,
-      responseDetails,
-      BORDER_DASH,
-      BORDER_STAR,
-    ].join('\n');
+    const wrapBlock = (responseDetails, commandName) =>
+      [commandLine(commandName), BORDER_DASH, responseDetails, BORDER_DASH, BORDER_STAR].join("\n");
 
-    const hexContentCompnent = (
+    const hexContentComponent = (
       <pre style={preStyle}>
-        {logs
-          .map((log) => wrapBlock(log.text, log.commandName))
-          .join('\n')}
+        {logs.map((log) => wrapBlock(log.text, log.commandName)).join("\n")}
         <div ref={logEndRef} />
       </pre>
-    )
+    );
 
     // --- Mode: HEX ---
     if (viewMode === "hex") {
-      return hexContentCompnent;
+      return hexContentComponent;
     }
 
     const textContentComponent = (
@@ -136,19 +177,24 @@ export default function LogsPanel({ logs, setLogs, logEndRef }) {
             const lines = log.text.split("\n").map((line) => {
               if (line.includes("Sent:")) {
                 const [prefix, hex] = line.split("Sent:");
-                return `${prefix}${log.commandName} Sent:\n\n${parseHexLine(hex.trim())}\n`;
+                const parsedHexLine = parseHexLine(hex.trim());
+                return `${prefix}${log.commandName} Sent:\n\n${parsedHexLine}\n`;
               } else if (line.includes("Response:")) {
                 const [prefix, hex] = line.split("Response:");
-                return `${prefix}${log.commandName} Response:\n\n${parseHexLine(hex.trim())}\n`;
+                const parsedHexLine = parseHexLine(hex.trim());
+                const validationResult = validateFields(parsedHexLine);
+
+                return `${prefix}${log.commandName} Response:\n\n${parsedHexLine}\n\n=== Validation Result ===\n${validationResult}\n`;
               }
               return line;
             });
+
             return wrapBlock(lines.join("\n"), log.commandName);
           })
-          .join('\n')}
+          .join("\n")}
         <div ref={logEndRef} />
       </pre>
-    )
+    );
 
     // --- Mode: TEXT ---
     if (viewMode === "text") {
@@ -158,7 +204,7 @@ export default function LogsPanel({ logs, setLogs, logEndRef }) {
     return (
       <div style={{ display: "flex", gap: "10px" }}>
         <pre style={{ ...preStyle, width: "50%" }}>
-          {hexContentCompnent}
+          {hexContentComponent}
           <div ref={logEndRef} />
         </pre>
         <pre style={{ ...preStyle, width: "50%" }}>{textContentComponent}</pre>
@@ -182,6 +228,56 @@ export default function LogsPanel({ logs, setLogs, logEndRef }) {
     gap: "10px",
   };
 
+  const exportLogsAsCSV = () => {
+    if (!logs || logs.length === 0) {
+      alert("No logs to export!");
+      return;
+    }
+
+    const rows = [];
+
+    logs.forEach((log) => {
+      const lines = log.text.split("\n");
+      const parsedLines = lines.map((line) => {
+        if (line.includes("Sent:")) {
+          const [prefix, hex] = line.split("Sent:");
+          const parsed = parseMessage(hex.trim());
+          return `${log.commandName} - Sent\n${parsed}`;
+        } else if (line.includes("Response:")) {
+          const [prefix, hex] = line.split("Response:");
+          const parsed = parseMessage(hex.trim());
+          return `${log.commandName} - Response\n${parsed}`;
+        }
+        return line;
+      });
+
+      parsedLines
+        .join("\n")
+        .split("\n")
+        .filter((l) => l.trim() !== "")
+        .forEach((line) => {
+          const trimmed = line.trim();
+          // ✅ ถ้าเป็นหัวข้อ (=== ... ===) ให้เว้นบรรทัดก่อนหน้า
+          if (/^===.*===/.test(trimmed) && rows.length > 0) {
+            rows.push(""); // แทรกบรรทัดว่าง
+          }
+          rows.push(trimmed);
+        });
+    });
+
+    // ✅ ไม่มี header ไม่มี column
+    const csvData = rows.map((line) => `"${line.replace(/"/g, '""')}"`).join("\n");
+
+    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "logs_text.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
@@ -202,26 +298,49 @@ export default function LogsPanel({ logs, setLogs, logEndRef }) {
           <option value="text">TEXT</option>
         </select>
       </div>
-      <div>
-        <button
-          onClick={() => setLogs([])}
-          style={{
-            flex: 1,
-            padding: "1px",
-            background: "#575757ff",
-            border: "solid 1px #000000ff",
-            borderRadius: "2px",
-            width: "70px",
-            height: "20px",
-            fontSize: "12px",
-            fontWeight: "400",
-            color: "white",
-          }}
-        >
-          Delete Logs
-        </button>
-        {renderLogs()}
+      <div style={{ display: "flex", gap: "5px", marginBottom: "10px" }}>
+        <div>
+          {/* ✅ ปุ่ม Delete Logs */}
+          <button
+            onClick={() => setLogs([])}
+            style={{
+              flex: 1,
+              padding: "1px",
+              background: "#575757ff",
+              border: "solid 1px #000000ff",
+              borderRadius: "2px",
+              width: "70px",
+              height: "20px",
+              fontSize: "12px",
+              fontWeight: "400",
+              color: "white",
+            }}
+          >
+            Delete Logs
+          </button>
+        </div>
+        <div>
+          {/* ✅ ปุ่ม Export CSV */}
+          <button
+            onClick={() => exportLogsAsCSV()}
+            style={{
+              flex: 1,
+              padding: "1px",
+              background: "#007bff",
+              border: "solid 1px #000000ff",
+              borderRadius: "2px",
+              width: "90px",
+              height: "20px",
+              fontSize: "12px",
+              fontWeight: "400",
+              color: "white",
+            }}
+          >
+            Export CSV
+          </button>
+        </div>
       </div>
+      {renderLogs()}
     </div>
   );
 }
