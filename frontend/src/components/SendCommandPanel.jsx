@@ -1,17 +1,6 @@
 import { MsgUtils } from "../utils/MsgUtils";
 
 
-export default function SendCommandPanel({
-  command,
-  setCommand,
-  selectedPort,
-  selectedBaudrate,
-  appendLog,
-  selectedCommandName,
-}) {
-
-  console.log("selectedCommandName", selectedCommandName)
-
 const sendCommand = async (hexCommand) => {
   if (!hexCommand) {
     appendLog({ text: "Please enter a command before sending.", commandName: selectedCommandName });
@@ -26,17 +15,20 @@ const sendCommand = async (hexCommand) => {
         port: selectedPort,
         baudrate: parseInt(selectedBaudrate),
         command: hexCommand,
-        name: selectedCommandName, // ✅ ใส่ชื่อคำสั่งไว้ด้วย (หรือดึงจาก state ก็ได้)
+        name: selectedCommandName,
       }),
     });
 
     const data = await res.json();
 
-    console.log('data', data)
+    console.log('data', data);
 
-    // ✅ แสดง log แบบจัดรูปที่ได้จาก backend
     if (data.log) {
-      appendLog({ text: data.log, commandName: selectedCommandName }); // ✅ เก็บชื่อ command
+      data.log.split("\n").forEach(line => {
+        if (line.trim()) {
+          appendLog({ text: line, commandName: selectedCommandName });
+        }
+      });
     } else {
       appendLog({ text: "No log returned", commandName: selectedCommandName });
     }
@@ -44,7 +36,6 @@ const sendCommand = async (hexCommand) => {
   } catch (err) {
     appendLog({ text: "Send command error: " + err.message, commandName: selectedCommandName });
   }
-};
 
 
   return (
@@ -65,7 +56,7 @@ const sendCommand = async (hexCommand) => {
         Send Command
       </button>
 
-      <div style={{display:"flex", flexDirection:"column", marginBottom:"20px"}}>
+      <div style={{ display: "flex", flexDirection: "column", marginBottom: "20px" }}>
         <p style={{ fontSize: "16px", fontWeight: "500", margin: 0 }}>HEX Command:</p>
         <textarea
           value={command}

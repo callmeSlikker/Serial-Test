@@ -20,7 +20,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 
     <Routes>
       <Route path="/" element={<App />} />
-      <Route path="/page2" element={<Page2 />} />
+      {/* <Route path="/page2" element={<Page2 />} /> */}
     </Routes>
     <nav className="p-3 bg-gray-100 flex gap-4">
       <Link to="/" className="text-blue-600 hover:underline">home</Link>

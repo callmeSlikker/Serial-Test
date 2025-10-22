@@ -22,7 +22,7 @@ def serialError(ser, Message ,errormsg):
     ser.close()
     resJson["errormsg"] = errormsg
     resJson["log"] = "".join(Message)
-    print("serialError"+resJson)
+    print(f"serialError: {json.dumps(resJson, indent=2)}")  # ✅ แก้ตรงนี้
     return jsonify(resJson), 400
 
 def current_time():
@@ -99,13 +99,13 @@ def current_time():
 #         return log
 
 @app.route("/sendCommand", methods=["POST"])
-def sendCommand(): 
+def sendCommand():
     global ser
     data = request.json
     port = data.get("port")
     baudrate = int(data.get("baudrate", 9600))
     hex_command = data.get("command", "").replace(" ", "")
-    command_name = data.get("name", "UnknownCommand")  # ✅ เพิ่มรับชื่อคำสั่งมาด้วย
+    command_name = data.get("name", "UnknownCommand")
 
     log_messages = []
     resJson["errormsg"] = ""
@@ -115,7 +115,7 @@ def sendCommand():
 
     try:
         # --- เปิด serial ---
-        ser = serial.Serial(port, baudrate, timeout=1)
+        ser = serial.Serial(port, baudrate, timeout=3)
         log_messages.append(f"{timestamp()} - Connected to {port} at {baudrate} bps")
 
         resJson["errormsg"] = "success"
@@ -124,16 +124,21 @@ def sendCommand():
         ser.write(command_bytes)
         log_messages.append(f"{timestamp()} - Sent: {hex_command}")
 
-        # --- อ่าน ACK ---
+        # --- อ่าน ACK หรือ NACK ---
         ack = ser.read(1)
         if not ack:
-            return serialError(ser, log_messages, "No ACK received")
+            return serialError(ser, log_messages, "No ACK/NACK received")
 
         hex_ack = binascii.hexlify(ack).decode().upper()
-        if ack == b'\x06':
-            log_messages.append(f"{timestamp()} - Response(ACK): {hex_ack}")
+        is_nck = False
+
+        if ack == b'\x06':  # ✅ ACK
+            log_messages.append(f"{timestamp()} - Response(ACK): {hex_ack} (acknowledgment)")
+        elif ack == b'\x15':  # ✅ NACK
+            is_nck = True
+            log_messages.append(f"{timestamp()} - Response(NACK): {hex_ack} (Negative acknowledgment)")
         else:
-            return serialError(ser, log_messages, f"Invalid ACK: {hex_ack}")
+            return serialError(ser, log_messages, f"Invalid ACK/NACK: {hex_ack}")
 
         # --- อ่าน response เต็มจนเจอ 1C03 ---
         response_bytes = bytearray()
@@ -145,6 +150,7 @@ def sendCommand():
             if chunk:
                 response_bytes.extend(chunk)
                 last_data_time = time.time()
+                # EDC มักจบด้วย 1C03
                 if response_bytes.endswith(b'\x1C\x03'):
                     break
             elif time.time() - last_data_time > max_wait:
@@ -166,7 +172,7 @@ def sendCommand():
 
         # ✅ รวมผลลัพธ์ทั้งหมด
         full_log = f"=== {command_name} ===\n" + "\n".join(log_messages)
-        resJson["Response"] = hex_response
+        resJson["Response"] = hex_response if not is_nck else f"NACK + {hex_response}"
         resJson["log"] = full_log
 
         return jsonify(resJson)
@@ -176,7 +182,6 @@ def sendCommand():
         resJson["log"] = "\n".join(log_messages)
         return jsonify(resJson)
 
-    
 
 @app.route("/")
 def index():
