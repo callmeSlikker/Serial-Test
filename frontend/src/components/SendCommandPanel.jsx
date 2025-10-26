@@ -6,12 +6,13 @@ export default function SendCommandPanel({
   selectedPort,
   selectedBaudrate,
   appendLog,
-  selectedCommandName,
+  selectedCommands,
+  setSelectedCommands,
 }) {
 
-  const sendCommand = async (hexCommand) => {
+  const sendCommand = async (hexCommand, commandName) => {
     if (!hexCommand) {
-      appendLog({ text: "Please enter a command before sending.", commandName: selectedCommandName });
+      appendLog({ text: "Please enter a command before sending.", commandName: commandName });
       return;
     }
 
@@ -23,45 +24,63 @@ export default function SendCommandPanel({
           port: selectedPort,
           baudrate: parseInt(selectedBaudrate),
           command: hexCommand,
-          name: selectedCommandName,
+          name: commandName,
         }),
       });
 
       const data = await res.json();
 
-      console.log('data', data);
-
       if (data.log) {
         data.log.split("\n").forEach(line => {
           if (line.trim()) {
-            appendLog({ text: line, commandName: selectedCommandName });
+            appendLog({ text: line, commandName: commandName });
           }
         });
       } else {
-        appendLog({ text: "No log returned", commandName: selectedCommandName });
+        appendLog({ text: "No log returned", commandName: commandName });
       }
 
     } catch (err) {
-      appendLog({ text: "Send command error: " + err.message, commandName: selectedCommandName });
+      appendLog({ text: "Send command error: " + err.message, commandName: commandName });
     }
+  };
+
+  const sendMultipleCommands = async () => {
+    if (selectedCommands.length === 0) {
+      appendLog({ text: "Please select commands before sending.", commandName: "Multiple Commands" });
+      return;
+    }
+
+    appendLog({ text: `Sending ${selectedCommands.length} command(s)...`, commandName: "Multiple Commands" });
+
+    for (const selectedCmd of selectedCommands) {
+      await sendCommand(selectedCmd.hex, selectedCmd.name);
+      // Add a small delay between commands to prevent overwhelming the serial port
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    // Clear selected commands after sending
+    setSelectedCommands([]);
   };
 
   return (
     <div>
       <button
-        onClick={() => sendCommand(command)}
+        onClick={() => selectedCommands.length > 0 ? sendMultipleCommands() : null}
+        disabled={selectedCommands.length === 0}
         style={{
           padding: "6px 12px",
           fontSize: "14px",
           fontWeight: "800",
           borderRadius: "5px",
-          cursor: "pointer",
+          cursor: selectedCommands.length > 0 ? "pointer" : "not-allowed",
           marginBottom: "10px",
-          backgroundColor: "#bcddff",
+          backgroundColor: selectedCommands.length > 0 ? "#4CAF50" : "#cccccc",
           border: "none",
+          opacity: selectedCommands.length > 0 ? 1 : 0.6,
         }}
       >
-        Send Command
+        Send Command{selectedCommands.length > 0 ? ` (${selectedCommands.length})` : " - Select commands first"}
       </button>
 
       <div style={{ display: "flex", flexDirection: "column", marginBottom: "20px" }}>

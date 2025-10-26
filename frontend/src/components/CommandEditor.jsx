@@ -16,6 +16,7 @@ export default function CommandEditor({
     responseCode,
     moreIndicator,
     fields,
+    selectedCommands,
   } = formCommandEditorValue;
 
   // --- State Update Helper ---
@@ -162,15 +163,21 @@ export default function CommandEditor({
   };
 
   // Delete Command
-  const handleDelete = () => {
-    if (editIndex === null) {
-      updateForm("editorWarning", "! Please select a command to delete.");
-      return;
-    }
+  const handleDeleteSelected = () => {
+    if (selectedCommands.length === 0) return;
 
-    if (window.confirm(`Delete "${editName}" ?`)) {
-      onDeleteCommand(editIndex); // 💥 ลบออกจาก Saved Commands + UI ทันที
-    }
+    // Get all indices to delete, sorted in descending order
+    const indicesToDelete = selectedCommands
+      .map(cmd => cmd.index)
+      .sort((a, b) => b - a);
+
+    // Delete each command starting from highest index
+    indicesToDelete.forEach(index => {
+      onDeleteCommand(index);
+    });
+
+    // Clear selection
+    updateForm("selectedCommands", []);
   };
 
   // --- UI ---
@@ -388,16 +395,19 @@ export default function CommandEditor({
         </button>
 
         <button
-          onClick={handleDelete}
+          onClick={handleDeleteSelected}
+          disabled={selectedCommands.length === 0}
           style={{
             flex: 1,
             padding: "6px",
-            background: "#f7d4d4",
+            background: selectedCommands.length === 0 ? "#ccc" : "#f7d4d4",
             border: "none",
             borderRadius: "5px",
+            cursor: selectedCommands.length === 0 ? "not-allowed" : "pointer",
+            opacity: selectedCommands.length === 0 ? 0.6 : 1,
           }}
         >
-          Delete
+          Delete ({selectedCommands.length})
         </button>
       </div>
     </div>

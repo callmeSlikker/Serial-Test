@@ -18,6 +18,7 @@ export default function SerialControlPage() {
     command:
       "02 00 35 36 30 30 30 30 30 30 30 30 30 31 30 35 36 30 30 30 1C 34 30 00 12 30 30 30 30 30 30 30 30 30 31 30 30 1C 03 15",
     commands: [],
+    selectedCommands: [],
     editIndex: null,
     editName: "Sale 56 1.00 THB",
     editHex:
@@ -54,8 +55,6 @@ export default function SerialControlPage() {
     setFormCommandEditorValue((prev) => ({ ...prev, [key]: value }));
   };
 
-  console.log("logs", logs)
-
   // fetch COM ports
   useEffect(() => {
     async function fetchPorts() {
@@ -73,8 +72,6 @@ export default function SerialControlPage() {
     fetchPorts();
   }, []);
 
-  console.log('logs', logs)
-
   // auto-scroll logs
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -86,6 +83,7 @@ export default function SerialControlPage() {
     selectedPort,
     selectedBaudrate,
     commands,
+    selectedCommands,
     command,
     editIndex,
     editName,
@@ -96,15 +94,11 @@ export default function SerialControlPage() {
     setFormCommandEditorValue((prev) => ({
       ...prev,
       commands: prev.commands.filter((_, i) => i !== index),
-      editIndex: null,
-      editName: "",
-      editHex: "",
-      editorWarning: "",
-      fields: [{ id: Date.now(), bit: "", value: "" }], onDeleteCommand,
+      selectedCommands: prev.selectedCommands.filter(cmd => cmd.index !== index).map(cmd =>
+        cmd.index > index ? { ...cmd, index: cmd.index - 1 } : cmd
+      ),
     }));
   };
-
-  console.log("editIndex", editIndex, commands)
 
   return (
     <div>
@@ -170,6 +164,8 @@ export default function SerialControlPage() {
                 setEditHex={(val) => updateForm("editHex", val)}
                 setEditIndex={(val) => updateForm("editIndex", val)}
                 setCommand={(val) => updateForm("command", val)}
+                selectedCommands={selectedCommands}
+                setSelectedCommands={(val) => updateForm("selectedCommands", val)}
               />
             </div>
           </div>
@@ -192,7 +188,8 @@ export default function SerialControlPage() {
                 selectedPort={selectedPort}
                 selectedBaudrate={selectedBaudrate}
                 appendLog={appendLog}
-                selectedCommandName={editIndex ? commands[editIndex]?.name || "" : editName}
+                selectedCommands={selectedCommands}
+                setSelectedCommands={(val) => updateForm("selectedCommands", val)}
               />
             </div>
             <div style={{ height: "85%" }}>
