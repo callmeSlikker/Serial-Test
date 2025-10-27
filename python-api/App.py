@@ -165,12 +165,12 @@ def sendCommand():
             log_messages.append(f"{timestamp()} - Response: (no data)")
 
         # --- ส่ง ACK กลับไป ---
-        ser.write(b'\x06')
-        log_messages.append(f"{timestamp()} - ACK sent")
+        # ser.write(b'\x06')
+        # log_messages.append(f"{timestamp()} - ACK sent")
 
         ser.close()
 
-        # ✅ รวมผลลัพธ์ทั้งหมด
+        # ✅ รวมผลลัพธ์ทั้งหมด.
         full_log = f"=== {command_name} ===\n" + "\n".join(log_messages)
         resJson["Response"] = hex_response if not is_nck else f"NACK + {hex_response}"
         resJson["log"] = full_log

@@ -1,5 +1,4 @@
 export default function FilesUpload({ setCommands }) {
-
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -14,8 +13,8 @@ export default function FilesUpload({ setCommands }) {
       for (let i = 0; i < lines.length; i++) {
         if (lines[i].trim() === "SEND") {
           const order = lines[i + 1]?.trim(); // ไม่ใช้
-          const name = lines[i + 2]?.trim(); // ชื่อ command
-          const hex = lines[i + 3]?.trim(); // HEX
+          const name = lines[i + 2]?.trim();  // ชื่อ command
+          const hex = lines[i + 3]?.trim();   // HEX
           if (name && hex) {
             importedCommands.push({ name, hex });
           }
