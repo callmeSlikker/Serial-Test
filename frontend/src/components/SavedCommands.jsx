@@ -1,5 +1,4 @@
 import { useRef, useEffect } from "react";
-import FilesUpload from "./FilesUpload"; // ✅ import component upload เข้ามา
 
 export default function SavedCommands({
   commands = [], // ✅ ป้องกัน undefined (เช่นตอนเริ่มต้น)
@@ -49,9 +48,6 @@ export default function SavedCommands({
   return (
     <div style={{ marginTop: "20px", overflowY: "scroll", height: "700px" }}>
       {/* 🔹 เพิ่มส่วน Upload ด้านบนสุด */}
-      <div style={{ marginBottom: "12px" }}>
-        <FilesUpload setCommands={setCommands} />
-      </div>
 
       <div
         style={{

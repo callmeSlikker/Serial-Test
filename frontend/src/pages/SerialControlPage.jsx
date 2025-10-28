@@ -33,22 +33,25 @@ export default function SerialControlPage() {
 
   const logEndRef = useRef(null);
 
-  const appendLog = (msg) => setLogs((prev) => {
-    const findIndex = prev.findIndex((l) => l.commandName === msg.commandName);
+  const appendLog = (msg) =>
+    setLogs((prev) => {
+      const findIndex = prev.findIndex(
+        (l) => l.commandName === msg.commandName
+      );
 
-    if (findIndex !== -1) {
-      // Update the existing log by appending new text
-      const updated = [...prev];
-      updated[findIndex] = {
-        ...updated[findIndex],
-        text: `${updated[findIndex].text}\n\n${msg.text}` // append new text
-      };
-      return updated;
-    }
+      if (findIndex !== -1) {
+        // Update the existing log by appending new text
+        const updated = [...prev];
+        updated[findIndex] = {
+          ...updated[findIndex],
+          text: `${updated[findIndex].text}\n\n${msg.text}`, // append new text
+        };
+        return updated;
+      }
 
-    // If not found, just add the new log
-    return [...prev, msg];
-  });
+      // If not found, just add the new log
+      return [...prev, msg];
+    });
 
   // helper to update formCommandEditorValue easily
   const updateForm = (key, value) => {
@@ -94,9 +97,11 @@ export default function SerialControlPage() {
     setFormCommandEditorValue((prev) => ({
       ...prev,
       commands: prev.commands.filter((_, i) => i !== index),
-      selectedCommands: prev.selectedCommands.filter(cmd => cmd.index !== index).map(cmd =>
-        cmd.index > index ? { ...cmd, index: cmd.index - 1 } : cmd
-      ),
+      selectedCommands: prev.selectedCommands
+        .filter((cmd) => cmd.index !== index)
+        .map((cmd) =>
+          cmd.index > index ? { ...cmd, index: cmd.index - 1 } : cmd
+        ),
     }));
   };
 
@@ -140,11 +145,11 @@ export default function SerialControlPage() {
               display: "flex",
               flexDirection: "row",
               gap: "20px",
-              width: "30%",
+              width: "40%",
             }}
           >
             {/* Command Editor */}
-            <div style={{ width: "65%" }}>
+            <div style={{ width: "50%" }}>
               <CommandEditor
                 formCommandEditorValue={formCommandEditorValue}
                 setFormCommandEditorValue={setFormCommandEditorValue}
@@ -153,9 +158,12 @@ export default function SerialControlPage() {
             </div>
 
             {/* File Upload + Saved Commands */}
-            <div style={{ width: "35%" }}>
+            <div style={{ width: "50%" }}>
               <FilesUpload
-                setCommands={(cmds) => updateForm("commands", cmds)}
+                setCommands={(updateCommands) =>
+                  updateForm("commands", [...commands, ...updateCommands])
+                }
+                existingCommands={commands}
               />
               <ExportCommands commands={commands} />
               <SavedCommands
@@ -165,7 +173,9 @@ export default function SerialControlPage() {
                 setEditIndex={(val) => updateForm("editIndex", val)}
                 setCommand={(val) => updateForm("command", val)}
                 selectedCommands={selectedCommands}
-                setSelectedCommands={(val) => updateForm("selectedCommands", val)}
+                setSelectedCommands={(val) =>
+                  updateForm("selectedCommands", val)
+                }
               />
             </div>
           </div>
@@ -176,25 +186,20 @@ export default function SerialControlPage() {
               flex: 1,
               display: "flex",
               flexDirection: "column",
-              gap: "20px",
-              width: "70%",
+              width: "60%",
             }}
           >
             {/* Send Command Panel */}
-            <div style={{ height: "15%" }}>
-              <SendCommandPanel
-                command={command}
-                setCommand={(val) => updateForm("command", val)}
-                selectedPort={selectedPort}
-                selectedBaudrate={selectedBaudrate}
-                appendLog={appendLog}
-                selectedCommands={selectedCommands}
-                setSelectedCommands={(val) => updateForm("selectedCommands", val)}
-              />
-            </div>
-            <div style={{ height: "85%" }}>
-              <LogsPanel logs={logs} setLogs={setLogs} logEndRef={logEndRef} />
-            </div>
+            <SendCommandPanel
+              command={command}
+              setCommand={(val) => updateForm("command", val)}
+              selectedPort={selectedPort}
+              selectedBaudrate={selectedBaudrate}
+              appendLog={appendLog}
+              selectedCommands={selectedCommands}
+              setSelectedCommands={(val) => updateForm("selectedCommands", val)}
+            />
+            <LogsPanel logs={logs} setLogs={setLogs} logEndRef={logEndRef} />
           </div>
         </div>
       </div>

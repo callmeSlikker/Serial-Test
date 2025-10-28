@@ -228,7 +228,7 @@ export default function LogsPanel({ logs, setLogs, logEndRef }) {
     gap: "10px",
   };
 
-  const exportLogsAsCSV = () => {
+  const exportLogsAsTXT = () => {
     if (!logs || logs.length === 0) {
       alert("No logs to export!");
       return;
@@ -236,17 +236,32 @@ export default function LogsPanel({ logs, setLogs, logEndRef }) {
 
     const rows = [];
 
-    logs.forEach((log) => {
+    // Add export header
+    const exportDate = new Date().toLocaleString();
+    rows.push("=".repeat(80));
+    rows.push("LOG EXPORT");
+    rows.push(`Generated: ${exportDate}`);
+    rows.push(`Total Commands: ${logs.length}`);
+    rows.push("=".repeat(80));
+    rows.push("");
+
+    logs.forEach((log, index) => {
+      // Add command header
+      rows.push("-".repeat(60));
+      rows.push(`COMMAND ${index + 1}: ${log.commandName}`);
+      rows.push("-".repeat(60));
+      rows.push("");
+
       const lines = log.text.split("\n");
       const parsedLines = lines.map((line) => {
         if (line.includes("Sent:")) {
           const [prefix, hex] = line.split("Sent:");
           const parsed = parseMessage(hex.trim());
-          return `${log.commandName} - Sent\n${parsed}`;
+          return `SENT:\n${parsed}`;
         } else if (line.includes("Response:")) {
           const [prefix, hex] = line.split("Response:");
           const parsed = parseMessage(hex.trim());
-          return `${log.commandName} - Response\n${parsed}`;
+          return `RESPONSE:\n${parsed}`;
         }
         return line;
       });
@@ -263,16 +278,20 @@ export default function LogsPanel({ logs, setLogs, logEndRef }) {
           }
           rows.push(trimmed);
         });
+
+      // Add separator between commands
+      rows.push("");
+      rows.push("");
     });
 
-    // ✅ ไม่มี header ไม่มี column
-    const csvData = rows.map((line) => `"${line.replace(/"/g, '""')}"`).join("\n");
+    // ✅ Export as plain text with headers
+    const txtData = rows.join("\n");
 
-    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([txtData], { type: "text/plain;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", "logs_text.csv");
+    link.setAttribute("download", "logs.txt");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -320,9 +339,9 @@ export default function LogsPanel({ logs, setLogs, logEndRef }) {
           </button>
         </div>
         <div>
-          {/* ✅ ปุ่ม Export CSV */}
+          {/* ✅ ปุ่ม Export Logs */}
           <button
-            onClick={() => exportLogsAsCSV()}
+            onClick={() => exportLogsAsTXT()}
             style={{
               flex: 1,
               padding: "1px",
@@ -336,7 +355,7 @@ export default function LogsPanel({ logs, setLogs, logEndRef }) {
               color: "white",
             }}
           >
-            Export CSV
+            Export Logs
           </button>
         </div>
       </div>

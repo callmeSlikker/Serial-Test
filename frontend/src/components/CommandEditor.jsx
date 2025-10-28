@@ -121,7 +121,7 @@ export default function CommandEditor({
     }
 
     // ✅ Step 4: ตรวจเช็คชื่อและ hex ก่อน save
-    const nameToSave = editName.trim();
+    let nameToSave = editName.trim();
     const hexToSave = hexStr.trim() || editHex.trim();
 
     if (!nameToSave || !hexToSave) {
@@ -129,25 +129,57 @@ export default function CommandEditor({
       return;
     }
 
-    // ✅ Step 5: บันทึก command
+    // ✅ Step 5: ตรวจสอบและจัดการชื่อซ้ำารชื่อซ้ำ
     const updated = [...commands];
+
+    // Skip duplicate checking if we're editing an existing command
+    if (editIndex === null) {
+      // Find all existing command names that start with the base name
+      const existingNames = commands.map(cmd => cmd.name);
+      const baseName = nameToSave;
+
+      // Check if the exact name already exists
+      if (existingNames.includes(nameToSave)) {
+        // Find the next available number
+        let counter = 1;
+        while (existingNames.includes(`${baseName} (${counter})`)) {
+          counter++;
+        }
+        nameToSave = `${baseName} (${counter})`;
+      }
+    }
+
+    // ✅ Step 6: บันทึก command
+
+    // Skip duplicate checking if we're editing an existing command
+    if (editIndex === null) {
+      // Find all existing command names that start with the base name
+      const existingNames = commands.map(cmd => cmd.name);
+      const baseName = nameToSave;
+    // ✅ Step 7: เคลียร์ฟอร์ม
+      // Check if the exact name already exists
+      if (existingNames.includes(nameToSave)) {
+        // Find the next available number
+        let counter = 1;
+        while (existingNames.includes(`${baseName} (${counter})`)) {
+          counter++;
+        }
+        nameToSave = `${baseName} (${counter})`;
+      }
+    }
+
+    // ✅ Step 6: บันทึก command
     if (editIndex !== null) {
       updated[editIndex] = { name: nameToSave, hex: hexToSave };
     } else {
       updated.push({ name: nameToSave, hex: hexToSave });
     }
 
-    // ✅ Step 6: เคลียร์ฟอร์ม
+    // ✅ Step 7: เคลียร์ฟอร์ม
     updateForm("commands", updated);
     updateForm("editIndex", null);
-    updateForm("editName", "Sale 56 1.00 THB");
-    updateForm(
-      "editHex",
-      "02 00 35 36 30 30 30 30 30 30 30 30 30 31 30 35 36 30 30 30 1C 34 30 00 12 30 30 30 30 30 30 30 30 30 31 30 30 1C 03 15"
-    );
     updateForm("editorWarning", "");
   };
-
 
   const handleClear = () => {
     setFormCommandEditorValue((prev) => ({
@@ -342,7 +374,7 @@ export default function CommandEditor({
                 cursor: "pointer",
               }}
             >
-              ⌫
+              ❌
             </button>
           </div>
         ))}
@@ -355,7 +387,7 @@ export default function CommandEditor({
 
       {/* Buttons */}
       <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
-        {/* <button
+        <button
           onClick={handleBuild}
           style={{
             flex: 1,
@@ -366,7 +398,7 @@ export default function CommandEditor({
           }}
         >
           Build
-        </button> */}
+        </button>
 
         <button
           onClick={handleSave}
