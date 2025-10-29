@@ -13,5 +13,6 @@
   2. npm install
 
 <h1>Running</h1>
-**Stay in folder Serial-Test [Ex: PS C:\Users\Intern\Serial-Test>]**
+
+**Stay in folder Serial-Test Ex: PS C:\Users\Intern\Serial-Test>**
   1. npm run start
