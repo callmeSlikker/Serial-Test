@@ -45,7 +45,7 @@ export default function SendCommandPanel({
           }
         });
       } else {
-        appendLog({ text: "No log returned", commandName: displayName });
+        appendLog({ text: "Port Connect Error", commandName: displayName });
       }
     } catch (err) {
       if (err.message.includes("PUT ERROR message here")) {
