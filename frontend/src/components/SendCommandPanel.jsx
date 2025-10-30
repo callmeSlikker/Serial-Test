@@ -80,7 +80,7 @@ export default function SendCommandPanel({
 
       // Add a delay between loops if not the last loop
       if (loop < count) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 10000));
       }
     }
   };
@@ -103,12 +103,12 @@ export default function SendCommandPanel({
       for (const selectedCmd of selectedCommands) {
         await sendCommand(selectedCmd.hex, selectedCmd.name, loop);
         // Add a small delay between commands to prevent overwhelming the serial port
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 10000));
       }
 
       // Add a delay between loops if not the last loop
       if (loop < count) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 10000));
       }
     }
 
@@ -173,7 +173,7 @@ export default function SendCommandPanel({
         <input
           type="number"
           min="1"
-          max="50"
+          max="2000"
           value={loopCount}
           onChange={(e) =>
             setLoopCount(Math.max(1, parseInt(e.target.value) || 1))
